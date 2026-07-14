@@ -358,8 +358,8 @@ tfoot td{padding:14px 16px;font-weight:700;border-top:2px solid var(--border);ba
     <!-- ====== 3. CURSOS ====== -->
     <section id="view-cursos" class="hidden">
       <div class="card">
-        <div class="section-title"><h2>Cursos y catálogo de materiales</h2></div>
-        <div class="table-wrap"><table><thead><tr><th>Curso</th><th>Clave</th><th>Materiales sugeridos</th><th>Alumnos</th><th>Costo base paquete</th></tr></thead><tbody id="cursosBody"></tbody></table></div>
+        <div class="section-title"><h2>Cursos y catálogo de materiales</h2><span class="hint">Doble clic en el nombre o usa ✎ para renombrar un curso</span></div>
+        <div class="table-wrap"><table><thead><tr><th>Curso</th><th>Clave</th><th>Materiales sugeridos</th><th>Alumnos</th><th>Costo base paquete</th><th></th></tr></thead><tbody id="cursosBody"></tbody></table></div>
       </div>
     </section>
 
@@ -598,10 +598,11 @@ function seed(){
   // inventario: stock por material del catálogo
   const inv={};
   CURSOS.forEach(c=>c.mats.forEach(m=>{ if(!(m.nombre in inv)) inv[m.nombre]={stock:5,minimo:3,precio:m.precio}; }));
-  return {cfg:JSON.parse(JSON.stringify(DEFAULT_CFG)),alumnos,envios,inventario:inv};
+  return {cfg:JSON.parse(JSON.stringify(DEFAULT_CFG)),alumnos,envios,inventario:inv,cursoNombres:{}};
 }
 
 db = load();               // ahora sí: folioSeq/uid/folio/seed ya están definidos
+if(!db.cursoNombres) db.cursoNombres={};   // migración: nombres de curso personalizados
 
 /* ==================== CÁLCULO ==================== */
 function calcEnvio(e){
@@ -614,7 +615,7 @@ function calcEnvio(e){
   const imp=sub*((+e.tasa||0)/100);
   return {cMat,cEmp,cBase,cZona,cEnvio,envio:cEmp+cEnvio,sub,imp,total:sub+imp};
 }
-const cursoNombre=cl=>{const c=CURSOS.find(x=>x.clave===cl);return c?c.nombre:cl};
+const cursoNombre=cl=>{if(db.cursoNombres&&db.cursoNombres[cl])return db.cursoNombres[cl];const c=CURSOS.find(x=>x.clave===cl);return c?c.nombre:cl};
 const alumnoDe=num=>db.alumnos.find(a=>a.numero===num);
 
 /* ==================== NAVEGACIÓN ==================== */
@@ -654,7 +655,7 @@ $('#themeBtn').onclick=toggleTheme;
 if(localStorage.getItem('ccrgm_theme'))document.documentElement.dataset.theme=localStorage.getItem('ccrgm_theme');
 
 /* ==================== SELECTS ==================== */
-function cursoOpts(){return CURSOS.map(c=>`<option value="${c.clave}">${c.nombre} (${c.clave})</option>`).join('')}
+function cursoOpts(){return CURSOS.map(c=>`<option value="${c.clave}">${cursoNombre(c.clave)} (${c.clave})</option>`).join('')}
 function fillSelects(){
   $('#aluCurso').innerHTML=cursoOpts();
   $('#curso').innerHTML=cursoOpts();
@@ -735,15 +736,15 @@ function renderDashboard(){
 
   /* ---- Alumnos por curso ---- */
   $('#chAluCurso').innerHTML=barChart(CURSOS.map((c,i)=>({
-    label:c.nombre,value:db.alumnos.filter(a=>a.curso===c.clave).length,color:PAL[i%PAL.length],always:true})));
+    label:cursoNombre(c.clave),value:db.alumnos.filter(a=>a.curso===c.clave).length,color:PAL[i%PAL.length],always:true})));
 
   /* ---- Cantidad de envíos por curso ---- */
   $('#chEnvCurso').innerHTML=barChart(CURSOS.map((c,i)=>({
-    label:c.nombre,value:E.filter(e=>e.curso===c.clave).length,color:PAL[i%PAL.length]})));
+    label:cursoNombre(c.clave),value:E.filter(e=>e.curso===c.clave).length,color:PAL[i%PAL.length]})));
 
   /* ---- Gasto total por curso ---- */
   $('#chGastoCurso').innerHTML=barChart(CURSOS.map((c,i)=>({
-    label:c.nombre,
+    label:cursoNombre(c.clave),
     value:E.filter(e=>e.curso===c.clave).reduce((s,e)=>s+calcEnvio(e).total,0),
     color:PAL[i%PAL.length]})),short);
 
@@ -863,11 +864,37 @@ function renderCursos(){
   $('#cursosBody').innerHTML=CURSOS.map(c=>{
     const total=c.mats.reduce((s,m)=>s+m.cant*m.precio,0)+c.base;
     const nAlu=db.alumnos.filter(a=>a.curso===c.clave).length;
-    return `<tr><td><b>${c.nombre}</b></td><td class="mono">${c.clave}</td>
+    const editado=db.cursoNombres&&db.cursoNombres[c.clave];
+    return `<tr>
+      <td><input class="curso-nombre" data-clave="${c.clave}" value="${cursoNombre(c.clave).replace(/"/g,'&quot;')}">
+        ${editado?`<span class="hint">Original: ${c.nombre}</span>`:''}</td>
+      <td class="mono">${c.clave}</td>
       <td>${c.mats.map(m=>`${m.nombre} <span class="hint">(${m.cant}×${money(m.precio)})</span>`).join('<br>')}</td>
-      <td class="mono">${nAlu}</td><td class="mono"><b>${money(total)}</b></td></tr>`;
+      <td class="mono">${nAlu}</td><td class="mono"><b>${money(total)}</b></td>
+      <td><div class="row-actions">
+        <button class="mini-btn" title="Guardar nombre" onclick="guardarCurso('${c.clave}')">✔</button>
+        ${editado?`<button class="mini-btn del" title="Restablecer nombre original" onclick="resetCurso('${c.clave}')">↺</button>`:''}
+      </div></td></tr>`;
   }).join('');
+  // guardar al presionar Enter o al perder el foco
+  document.querySelectorAll('.curso-nombre').forEach(inp=>{
+    inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();guardarCurso(inp.dataset.clave);}});
+    inp.addEventListener('blur',()=>guardarCurso(inp.dataset.clave,true));
+  });
 }
+function guardarCurso(clave,silencioso){
+  const inp=document.querySelector(`.curso-nombre[data-clave="${clave}"]`);if(!inp)return;
+  const nuevo=inp.value.trim();
+  const orig=CURSOS.find(x=>x.clave===clave).nombre;
+  if(!nuevo){inp.value=cursoNombre(clave);return;}
+  const actual=cursoNombre(clave);
+  if(nuevo===actual){return;} // sin cambios
+  if(nuevo===orig) delete db.cursoNombres[clave]; else db.cursoNombres[clave]=nuevo;
+  persist();fillSelects();renderCursos();
+  if(!silencioso) toast('✓ Nombre del curso actualizado');
+}
+window.guardarCurso=guardarCurso;
+window.resetCurso=clave=>{delete db.cursoNombres[clave];persist();fillSelects();renderCursos();toast('↺ Nombre original restablecido');};
 
 /* ============================================================ */
 /* 4. ENVÍOS                                                     */
@@ -1139,7 +1166,7 @@ $('#cfgExport').onclick=()=>{dl('respaldo_ccrgm.json',JSON.stringify(db,null,2),
 $('#cfgImport').onchange=ev=>{const f=ev.target.files[0];if(!f)return;const r=new FileReader();
   r.onload=()=>{try{db=JSON.parse(r.result);persist();fillSelects();show('dashboard');toast('✓ Respaldo importado');}catch{toast('⚠ Archivo inválido');}};r.readAsText(f);};
 $('#cfgSeed').onclick=()=>{if(confirm('¿Restablecer los datos de ejemplo? Se perderán los cambios actuales.')){db=seed();persist();fillSelects();show('dashboard');toast('↺ Datos restablecidos');}};
-$('#cfgWipe').onclick=()=>{if(confirm('¿Borrar TODOS los datos? Esta acción no se puede deshacer.')){db={cfg:JSON.parse(JSON.stringify(DEFAULT_CFG)),alumnos:[],envios:[],inventario:{}};persist();fillSelects();show('dashboard');toast('🗑 Datos borrados');}};
+$('#cfgWipe').onclick=()=>{if(confirm('¿Borrar TODOS los datos? Esta acción no se puede deshacer.')){db={cfg:JSON.parse(JSON.stringify(DEFAULT_CFG)),alumnos:[],envios:[],inventario:{},cursoNombres:{}};persist();fillSelects();show('dashboard');toast('🗑 Datos borrados');}};
 
 /* ==================== UTILIDADES ==================== */
 function dl(name,content,type){const b=new Blob([content],{type:type+';charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;a.click();}
