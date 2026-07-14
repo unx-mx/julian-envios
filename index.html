@@ -358,7 +358,9 @@ tfoot td{padding:14px 16px;font-weight:700;border-top:2px solid var(--border);ba
     <!-- ====== 3. CURSOS ====== -->
     <section id="view-cursos" class="hidden">
       <div class="card">
-        <div class="section-title"><h2>Cursos y catálogo de materiales</h2><span class="hint">Doble clic en el nombre o usa ✎ para renombrar un curso</span></div>
+        <div class="section-title"><h2>Cursos y catálogo de materiales</h2>
+          <button class="btn btn-primary btn-sm" id="addCursoBtn">＋ Agregar curso</button></div>
+        <p class="hint" style="margin-bottom:14px">Edita el nombre directamente en la tabla (Enter para guardar). Usa ✎ para editar todos los datos del curso y sus materiales, o 🗑 para eliminarlo.</p>
         <div class="table-wrap"><table><thead><tr><th>Curso</th><th>Clave</th><th>Materiales sugeridos</th><th>Alumnos</th><th>Costo base paquete</th><th></th></tr></thead><tbody id="cursosBody"></tbody></table></div>
       </div>
     </section>
@@ -541,12 +543,37 @@ tfoot td{padding:14px 16px;font-weight:700;border-top:2px solid var(--border);ba
   </div>
 </div>
 
+<!-- ====== MODAL AGREGAR / EDITAR CURSO ====== -->
+<div class="modal-bg" id="cursoModal">
+  <div class="modal">
+    <div class="modal-head">
+      <div><h2 id="cursoModalTitle">Agregar curso</h2><div class="sub">Define el nombre, la clave, el costo base y los materiales sugeridos</div></div>
+      <button class="icon-btn" id="cursoModalClose">✕</button>
+    </div>
+    <form id="cursoForm">
+      <input type="hidden" id="cursoEditClave">
+      <div class="form-grid">
+        <div class="field"><label>Nombre del curso</label><input id="cursoNombreInp" placeholder="Ej. Química General" required></div>
+        <div class="field"><label>Clave</label><input id="cursoClaveInp" placeholder="Ej. QUI-701"><span class="hint">Se genera automáticamente si la dejas vacía</span></div>
+        <div class="field"><label>Costo base del paquete</label><input id="cursoBaseInp" type="number" min="0" step="0.01" value="0"></div>
+        <div class="field full"><label>Materiales sugeridos</label>
+          <div class="materials-box" id="cursoMatBox"></div>
+          <button type="button" class="btn btn-ghost btn-sm" id="cursoAddMat" style="margin-top:4px">＋ Agregar material</button></div>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-ghost" id="cursoCancel">Cancelar</button>
+        <button type="submit" class="btn btn-primary">💾 Guardar curso</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <div id="toast"></div>
 <div id="printArea"></div>
 
 <script>
-/* ==================== CATÁLOGO DE CURSOS ==================== */
-const CURSOS=[
+/* ==================== CATÁLOGO DE CURSOS (plantilla por defecto) ==================== */
+const CURSOS_DEFAULT=[
  {clave:'MAT-101',nombre:'Matemáticas Básicas',base:120,mats:[{nombre:'Libro de texto Matemáticas',cant:1,precio:320},{nombre:'Cuaderno de ejercicios',cant:2,precio:65}]},
  {clave:'ESP-201',nombre:'Español y Redacción',base:100,mats:[{nombre:'Antología de lecturas',cant:1,precio:280},{nombre:'Guía de ortografía',cant:1,precio:110}]},
  {clave:'CIE-301',nombre:'Ciencias Naturales',base:150,mats:[{nombre:'Kit de laboratorio',cant:1,precio:540},{nombre:'Manual de prácticas',cant:1,precio:150}]},
@@ -554,6 +581,9 @@ const CURSOS=[
  {clave:'HIS-501',nombre:'Historia Universal',base:90,mats:[{nombre:'Atlas histórico',cant:1,precio:260},{nombre:'Línea del tiempo impresa',cant:1,precio:85}]},
  {clave:'INF-601',nombre:'Informática Aplicada',base:160,mats:[{nombre:'Manual de software',cant:1,precio:300},{nombre:'Memoria USB 32GB',cant:1,precio:180}]},
 ];
+const clonar=o=>JSON.parse(JSON.stringify(o));
+// CURSOS apunta a la lista viva (db.cursos). Antes de cargar db, usa la plantilla.
+let CURSOS=clonar(CURSOS_DEFAULT);
 
 /* ==================== CONFIG + ESTADO ==================== */
 const KEY='ccrgm_v3';
@@ -597,12 +627,19 @@ function seed(){
   ];
   // inventario: stock por material del catálogo
   const inv={};
-  CURSOS.forEach(c=>c.mats.forEach(m=>{ if(!(m.nombre in inv)) inv[m.nombre]={stock:5,minimo:3,precio:m.precio}; }));
-  return {cfg:JSON.parse(JSON.stringify(DEFAULT_CFG)),alumnos,envios,inventario:inv,cursoNombres:{}};
+  CURSOS_DEFAULT.forEach(c=>c.mats.forEach(m=>{ if(!(m.nombre in inv)) inv[m.nombre]={stock:5,minimo:3,precio:m.precio}; }));
+  return {cfg:JSON.parse(JSON.stringify(DEFAULT_CFG)),alumnos,envios,inventario:inv,cursos:clonar(CURSOS_DEFAULT)};
 }
 
 db = load();               // ahora sí: folioSeq/uid/folio/seed ya están definidos
-if(!db.cursoNombres) db.cursoNombres={};   // migración: nombres de curso personalizados
+/* ---- migración: la lista de cursos vive en db.cursos ---- */
+if(!db.cursos){
+  db.cursos=clonar(CURSOS_DEFAULT);
+  // si venía de una versión previa con nombres personalizados, aplícalos
+  if(db.cursoNombres) db.cursos.forEach(c=>{ if(db.cursoNombres[c.clave]) c.nombre=db.cursoNombres[c.clave]; });
+}
+delete db.cursoNombres;      // ya no se usa: los nombres viven en db.cursos
+CURSOS=db.cursos;            // CURSOS apunta a la lista viva y persistida
 
 /* ==================== CÁLCULO ==================== */
 function calcEnvio(e){
@@ -615,7 +652,7 @@ function calcEnvio(e){
   const imp=sub*((+e.tasa||0)/100);
   return {cMat,cEmp,cBase,cZona,cEnvio,envio:cEmp+cEnvio,sub,imp,total:sub+imp};
 }
-const cursoNombre=cl=>{if(db.cursoNombres&&db.cursoNombres[cl])return db.cursoNombres[cl];const c=CURSOS.find(x=>x.clave===cl);return c?c.nombre:cl};
+const cursoNombre=cl=>{const c=CURSOS.find(x=>x.clave===cl);return c?c.nombre:cl};
 const alumnoDe=num=>db.alumnos.find(a=>a.numero===num);
 
 /* ==================== NAVEGACIÓN ==================== */
@@ -864,37 +901,106 @@ function renderCursos(){
   $('#cursosBody').innerHTML=CURSOS.map(c=>{
     const total=c.mats.reduce((s,m)=>s+m.cant*m.precio,0)+c.base;
     const nAlu=db.alumnos.filter(a=>a.curso===c.clave).length;
-    const editado=db.cursoNombres&&db.cursoNombres[c.clave];
+    const nEnv=db.envios.filter(e=>e.curso===c.clave).length;
     return `<tr>
-      <td><input class="curso-nombre" data-clave="${c.clave}" value="${cursoNombre(c.clave).replace(/"/g,'&quot;')}">
-        ${editado?`<span class="hint">Original: ${c.nombre}</span>`:''}</td>
+      <td><input class="curso-nombre" data-clave="${c.clave}" value="${(c.nombre||'').replace(/"/g,'&quot;')}"></td>
       <td class="mono">${c.clave}</td>
-      <td>${c.mats.map(m=>`${m.nombre} <span class="hint">(${m.cant}×${money(m.precio)})</span>`).join('<br>')}</td>
+      <td>${c.mats.length?c.mats.map(m=>`${m.nombre} <span class="hint">(${m.cant}×${money(m.precio)})</span>`).join('<br>'):'<span class="hint">Sin materiales</span>'}</td>
       <td class="mono">${nAlu}</td><td class="mono"><b>${money(total)}</b></td>
       <td><div class="row-actions">
-        <button class="mini-btn" title="Guardar nombre" onclick="guardarCurso('${c.clave}')">✔</button>
-        ${editado?`<button class="mini-btn del" title="Restablecer nombre original" onclick="resetCurso('${c.clave}')">↺</button>`:''}
+        <button class="mini-btn" title="Editar curso y materiales" onclick="editCurso('${c.clave}')">✎</button>
+        <button class="mini-btn del" title="Eliminar curso" onclick="delCurso('${c.clave}')">🗑</button>
       </div></td></tr>`;
-  }).join('');
-  // guardar al presionar Enter o al perder el foco
+  }).join('')||`<tr><td colspan="6"><div class="empty"><div class="big">📚</div>No hay cursos. Agrega uno con el botón “＋ Agregar curso”.</div></td></tr>`;
+  // guardar nombre al presionar Enter o al perder el foco
   document.querySelectorAll('.curso-nombre').forEach(inp=>{
-    inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();guardarCurso(inp.dataset.clave);}});
-    inp.addEventListener('blur',()=>guardarCurso(inp.dataset.clave,true));
+    inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();inp.blur();}});
+    inp.addEventListener('blur',()=>guardarNombreCurso(inp.dataset.clave,inp.value));
   });
 }
-function guardarCurso(clave,silencioso){
-  const inp=document.querySelector(`.curso-nombre[data-clave="${clave}"]`);if(!inp)return;
-  const nuevo=inp.value.trim();
-  const orig=CURSOS.find(x=>x.clave===clave).nombre;
-  if(!nuevo){inp.value=cursoNombre(clave);return;}
-  const actual=cursoNombre(clave);
-  if(nuevo===actual){return;} // sin cambios
-  if(nuevo===orig) delete db.cursoNombres[clave]; else db.cursoNombres[clave]=nuevo;
-  persist();fillSelects();renderCursos();
-  if(!silencioso) toast('✓ Nombre del curso actualizado');
+function guardarNombreCurso(clave,valor){
+  const c=CURSOS.find(x=>x.clave===clave);if(!c)return;
+  const nuevo=(valor||'').trim();
+  if(!nuevo){renderCursos();return;}          // vacío: revierte
+  if(nuevo===c.nombre)return;                 // sin cambios
+  c.nombre=nuevo;persist();fillSelects();
+  if($('#view-dashboard')&&!$('#view-dashboard').classList.contains('hidden'))renderDashboard();
+  toast('✓ Nombre del curso actualizado');
 }
-window.guardarCurso=guardarCurso;
-window.resetCurso=clave=>{delete db.cursoNombres[clave];persist();fillSelects();renderCursos();toast('↺ Nombre original restablecido');};
+
+/* ---- generar clave única ---- */
+function generarClave(nombre){
+  let base=(nombre||'CURSO').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^A-Za-z]/g,'').toUpperCase().slice(0,3)||'CUR';
+  let n=101;let clave;
+  do{clave=base+'-'+n;n++;}while(CURSOS.some(c=>c.clave===clave));
+  return clave;
+}
+
+/* ---- modal agregar / editar curso ---- */
+function cursoMatRow(m={nombre:'',cant:1,precio:0}){
+  const row=document.createElement('div');row.className='mat-row';
+  row.innerHTML=`<div class="field"><input class="cm-nombre" placeholder="Material" value="${(m.nombre||'').replace(/"/g,'&quot;')}"></div>
+    <div class="field"><input class="cm-cant" type="number" min="1" value="${m.cant}"></div>
+    <div class="field"><input class="cm-precio" type="number" min="0" step="0.01" value="${m.precio}"></div>
+    <button type="button" class="mat-del">✕</button>`;
+  row.querySelector('.mat-del').onclick=()=>row.remove();
+  return row;
+}
+$('#cursoAddMat').onclick=()=>$('#cursoMatBox').appendChild(cursoMatRow());
+function abrirCursoModal(curso){
+  $('#cursoForm').reset();$('#cursoMatBox').innerHTML='';
+  if(curso){
+    $('#cursoModalTitle').textContent='Editar curso';
+    $('#cursoEditClave').value=curso.clave;
+    $('#cursoNombreInp').value=curso.nombre;
+    $('#cursoClaveInp').value=curso.clave;$('#cursoClaveInp').readOnly=true;   // no cambiar clave (enlaza envíos/alumnos)
+    $('#cursoBaseInp').value=curso.base;
+    curso.mats.forEach(m=>$('#cursoMatBox').appendChild(cursoMatRow(m)));
+  }else{
+    $('#cursoModalTitle').textContent='Agregar curso';
+    $('#cursoEditClave').value='';$('#cursoClaveInp').readOnly=false;$('#cursoBaseInp').value=0;
+    $('#cursoMatBox').appendChild(cursoMatRow());
+  }
+  $('#cursoModal').classList.add('open');
+}
+$('#addCursoBtn').onclick=()=>abrirCursoModal();
+$('#cursoModalClose').onclick=$('#cursoCancel').onclick=()=>$('#cursoModal').classList.remove('open');
+$('#cursoModal').onclick=e=>{if(e.target===$('#cursoModal'))$('#cursoModal').classList.remove('open');};
+$('#cursoForm').onsubmit=e=>{
+  e.preventDefault();
+  const nombre=$('#cursoNombreInp').value.trim();
+  if(!nombre){toast('⚠ Escribe el nombre del curso');return;}
+  const mats=[...$('#cursoMatBox').querySelectorAll('.mat-row')].map(r=>({
+    nombre:r.querySelector('.cm-nombre').value.trim(),cant:+r.querySelector('.cm-cant').value||1,precio:+r.querySelector('.cm-precio').value||0
+  })).filter(m=>m.nombre);
+  const base=+$('#cursoBaseInp').value||0;
+  const editClave=$('#cursoEditClave').value;
+  if(editClave){
+    const c=CURSOS.find(x=>x.clave===editClave);
+    c.nombre=nombre;c.base=base;c.mats=mats;
+    toast('✓ Curso actualizado');
+  }else{
+    let clave=$('#cursoClaveInp').value.trim().toUpperCase();
+    if(!clave) clave=generarClave(nombre);
+    if(CURSOS.some(c=>c.clave===clave)){toast('⚠ La clave “'+clave+'” ya existe');return;}
+    CURSOS.push({clave,nombre,base,mats});
+    // registra los materiales nuevos en el inventario
+    mats.forEach(m=>{if(!db.inventario[m.nombre])db.inventario[m.nombre]={stock:0,minimo:3,precio:m.precio};});
+    toast('✓ Curso agregado');
+  }
+  persist();fillSelects();renderCursos();$('#cursoModal').classList.remove('open');
+};
+window.editCurso=clave=>abrirCursoModal(CURSOS.find(x=>x.clave===clave));
+window.delCurso=clave=>{
+  const c=CURSOS.find(x=>x.clave===clave);if(!c)return;
+  const nAlu=db.alumnos.filter(a=>a.curso===clave).length;
+  const nEnv=db.envios.filter(e=>e.curso===clave).length;
+  if(nAlu||nEnv){toast(`⚠ No se puede eliminar: tiene ${nAlu} alumno(s) y ${nEnv} envío(s) asociados`);return;}
+  if(confirm(`¿Eliminar el curso “${c.nombre}” (${clave})?`)){
+    const i=CURSOS.findIndex(x=>x.clave===clave);CURSOS.splice(i,1);
+    persist();fillSelects();renderCursos();toast('🗑 Curso eliminado');
+  }
+};
 
 /* ============================================================ */
 /* 4. ENVÍOS                                                     */
@@ -1163,10 +1269,12 @@ $('#cfgSave').onclick=()=>{
 };
 $('#cfgTheme').onclick=toggleTheme;
 $('#cfgExport').onclick=()=>{dl('respaldo_ccrgm.json',JSON.stringify(db,null,2),'application/json');toast('⭳ Respaldo exportado');};
+/* re-sincroniza CURSOS y campos tras reemplazar db (importar/restablecer/borrar) */
+function sincronizarDb(){if(!db.cursos)db.cursos=clonar(CURSOS_DEFAULT);if(!db.inventario)db.inventario={};if(!db.alumnos)db.alumnos=[];if(!db.envios)db.envios=[];if(!db.cfg)db.cfg=clonar(DEFAULT_CFG);delete db.cursoNombres;CURSOS=db.cursos;}
 $('#cfgImport').onchange=ev=>{const f=ev.target.files[0];if(!f)return;const r=new FileReader();
-  r.onload=()=>{try{db=JSON.parse(r.result);persist();fillSelects();show('dashboard');toast('✓ Respaldo importado');}catch{toast('⚠ Archivo inválido');}};r.readAsText(f);};
-$('#cfgSeed').onclick=()=>{if(confirm('¿Restablecer los datos de ejemplo? Se perderán los cambios actuales.')){db=seed();persist();fillSelects();show('dashboard');toast('↺ Datos restablecidos');}};
-$('#cfgWipe').onclick=()=>{if(confirm('¿Borrar TODOS los datos? Esta acción no se puede deshacer.')){db={cfg:JSON.parse(JSON.stringify(DEFAULT_CFG)),alumnos:[],envios:[],inventario:{},cursoNombres:{}};persist();fillSelects();show('dashboard');toast('🗑 Datos borrados');}};
+  r.onload=()=>{try{db=JSON.parse(r.result);sincronizarDb();persist();fillSelects();show('dashboard');toast('✓ Respaldo importado');}catch{toast('⚠ Archivo inválido');}};r.readAsText(f);};
+$('#cfgSeed').onclick=()=>{if(confirm('¿Restablecer los datos de ejemplo? Se perderán los cambios actuales.')){db=seed();sincronizarDb();persist();fillSelects();show('dashboard');toast('↺ Datos restablecidos');}};
+$('#cfgWipe').onclick=()=>{if(confirm('¿Borrar TODOS los datos? Esta acción no se puede deshacer.')){db={cfg:clonar(DEFAULT_CFG),alumnos:[],envios:[],inventario:{},cursos:clonar(CURSOS_DEFAULT)};sincronizarDb();persist();fillSelects();show('dashboard');toast('🗑 Datos borrados');}};
 
 /* ==================== UTILIDADES ==================== */
 function dl(name,content,type){const b=new Blob([content],{type:type+';charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;a.click();}
