@@ -1,0 +1,1153 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CCRGM · CRM de Envíos de Materiales Didácticos</title>
+<style>
+/* ===================== TOKENS DE DISEÑO 2026 ===================== */
+:root{
+  --bg:#f4f5fb; --surface:rgba(255,255,255,.72); --surface-solid:#fff;
+  --border:rgba(15,23,42,.08); --text:#0f172a; --text-soft:#475569; --text-faint:#94a3b8;
+  --brand:#6366f1; --brand-2:#8b5cf6; --accent:#06b6d4;
+  --good:#10b981; --warn:#f59e0b; --bad:#ef4444;
+  --shadow:0 10px 30px -12px rgba(31,41,80,.25),0 2px 8px -4px rgba(31,41,80,.12);
+  --radius:18px; --radius-sm:12px;
+}
+[data-theme="dark"]{
+  --bg:#0a0b14; --surface:rgba(23,25,40,.68); --surface-solid:#151726;
+  --border:rgba(255,255,255,.08); --text:#e8eaf6; --text-soft:#a5adcb; --text-faint:#6b7394;
+  --shadow:0 14px 40px -14px rgba(0,0,0,.6),0 2px 8px -4px rgba(0,0,0,.5);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  background:
+    radial-gradient(1200px 600px at 100% -10%,rgba(139,92,246,.10),transparent 60%),
+    radial-gradient(1000px 500px at -10% 20%,rgba(6,182,212,.10),transparent 55%),var(--bg);
+  color:var(--text);min-height:100vh;line-height:1.5;-webkit-font-smoothing:antialiased;
+  transition:background .4s,color .3s;
+}
+.app{display:grid;grid-template-columns:250px 1fr;min-height:100vh}
+@media(max-width:900px){.app{grid-template-columns:1fr}.sidebar{position:fixed;z-index:50;transform:translateX(-100%);transition:.3s;width:250px}.sidebar.open{transform:translateX(0)}.menu-toggle{display:grid!important}}
+
+/* ===================== SIDEBAR ===================== */
+.sidebar{
+  background:var(--surface);backdrop-filter:blur(20px) saturate(160%);
+  border-right:1px solid var(--border);padding:24px 16px;
+  display:flex;flex-direction:column;gap:4px;position:sticky;top:0;height:100vh;overflow-y:auto;
+}
+.logo{display:flex;align-items:center;gap:12px;margin-bottom:22px;padding:0 6px}
+.logo-mark{width:44px;height:44px;border-radius:14px;flex:0 0 auto;
+  background:linear-gradient(135deg,var(--brand),var(--brand-2));display:grid;place-items:center;
+  color:#fff;font-weight:800;font-size:15px;box-shadow:0 8px 20px -6px rgba(99,102,241,.55)}
+.logo-text b{font-size:16px;letter-spacing:.5px;display:block}
+.logo-text span{font-size:10.5px;color:var(--text-faint);letter-spacing:1.5px;text-transform:uppercase}
+.nav-label{font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:var(--text-faint);padding:12px 12px 6px;font-weight:700}
+.nav-item{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:12px;
+  color:var(--text-soft);font-weight:500;font-size:14px;cursor:pointer;border:1px solid transparent;transition:.2s;position:relative}
+.nav-item:hover{background:rgba(99,102,241,.08);color:var(--text)}
+.nav-item.active{background:linear-gradient(135deg,rgba(99,102,241,.16),rgba(139,92,246,.12));
+  color:var(--text);border-color:var(--border);font-weight:600}
+.nav-item .ic{width:22px;text-align:center;font-size:16px}
+.nav-item .badge{margin-left:auto;background:var(--bad);color:#fff;font-size:10px;font-weight:700;
+  min-width:20px;height:20px;border-radius:10px;display:grid;place-items:center;padding:0 6px}
+.sidebar-foot{margin-top:auto;font-size:10.5px;color:var(--text-faint);padding:14px 8px 0;line-height:1.6}
+
+/* ===================== MAIN ===================== */
+.main{padding:24px 32px 60px;max-width:1440px;width:100%}
+@media(max-width:600px){.main{padding:16px}}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:24px;flex-wrap:wrap}
+.topbar h1{font-size:25px;font-weight:800;letter-spacing:-.5px}
+.topbar .sub{color:var(--text-faint);font-size:13px;margin-top:2px}
+.top-actions{display:flex;gap:10px;align-items:center}
+.icon-btn{width:42px;height:42px;border-radius:12px;border:1px solid var(--border);background:var(--surface);
+  cursor:pointer;font-size:17px;color:var(--text-soft);display:grid;place-items:center;transition:.2s;backdrop-filter:blur(10px)}
+.icon-btn:hover{color:var(--brand);transform:translateY(-2px);box-shadow:var(--shadow)}
+.menu-toggle{display:none}
+
+/* ===================== CARDS / KPIs ===================== */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px}
+.card{background:var(--surface);backdrop-filter:blur(18px) saturate(150%);border:1px solid var(--border);
+  border-radius:var(--radius);box-shadow:var(--shadow);padding:20px 22px}
+.card + .card{margin-top:20px}
+.kpi .kpi-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.kpi-label{font-size:12px;color:var(--text-faint);text-transform:uppercase;letter-spacing:1px;font-weight:600}
+.kpi-ic{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;font-size:17px}
+.kpi-val{font-size:27px;font-weight:800;letter-spacing:-.5px}
+.kpi-delta{font-size:12px;margin-top:6px;font-weight:600;color:var(--text-faint)}
+.up{color:var(--good)} .down{color:var(--bad)}
+
+.section-title{display:flex;align-items:center;justify-content:space-between;margin:2px 2px 16px;gap:12px;flex-wrap:wrap}
+.section-title h2{font-size:18px;font-weight:700}
+.grid-2{display:grid;grid-template-columns:1.15fr .85fr;gap:20px;align-items:start}
+@media(max-width:1050px){.grid-2{grid-template-columns:1fr}}
+
+/* ===================== FORM ===================== */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:520px){.form-grid{grid-template-columns:1fr}}
+.field{display:flex;flex-direction:column;gap:7px}
+.field.full{grid-column:1/-1}
+label{font-size:12.5px;font-weight:600;color:var(--text-soft)}
+input,select{width:100%;padding:12px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);
+  background:var(--surface-solid);color:var(--text);font-size:14px;font-family:inherit;transition:.2s}
+input:focus,select:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 4px rgba(99,102,241,.14)}
+.hint{font-size:11px;color:var(--text-faint)}
+.form-sec{grid-column:1/-1;font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.9px;color:var(--brand);margin-top:10px;padding-bottom:7px;border-bottom:1px solid var(--border)}
+.form-sec:first-child{margin-top:0}
+.materials-box{border:1px dashed var(--border);border-radius:var(--radius-sm);padding:14px;background:rgba(99,102,241,.03)}
+.mat-row{display:grid;grid-template-columns:1fr 90px 110px 40px;gap:10px;margin-bottom:10px;align-items:end}
+@media(max-width:520px){.mat-row{grid-template-columns:1fr 70px 90px 34px}}
+.mat-del{width:100%;height:44px;border-radius:10px;border:1px solid var(--border);
+  background:rgba(239,68,68,.08);color:var(--bad);cursor:pointer;font-size:16px;transition:.2s}
+.mat-del:hover{background:var(--bad);color:#fff}
+.btn{padding:12px 20px;border-radius:12px;border:none;cursor:pointer;font-size:14px;font-weight:600;
+  font-family:inherit;transition:.2s;display:inline-flex;align-items:center;gap:8px}
+.btn-primary{background:linear-gradient(135deg,var(--brand),var(--brand-2));color:#fff;box-shadow:0 10px 24px -8px rgba(99,102,241,.55)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 14px 30px -8px rgba(99,102,241,.65)}
+.btn-ghost{background:transparent;color:var(--text-soft);border:1px solid var(--border)}
+.btn-ghost:hover{background:rgba(99,102,241,.08);color:var(--text)}
+.btn-sm{padding:8px 12px;font-size:12.5px;border-radius:10px}
+.form-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:6px;flex-wrap:wrap}
+
+.cost-line{display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px dashed var(--border);font-size:14px}
+.cost-line:last-of-type{border:none}
+.cost-line span:first-child{color:var(--text-soft)}
+.cost-total{margin-top:10px;padding:16px 18px;border-radius:14px;
+  background:linear-gradient(135deg,rgba(99,102,241,.14),rgba(6,182,212,.10));border:1px solid var(--border);
+  display:flex;justify-content:space-between;align-items:center}
+.cost-total .lbl{font-size:13px;color:var(--text-soft);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.cost-total .amt{font-size:26px;font-weight:800;letter-spacing:-.5px;color:var(--brand)}
+
+/* ===================== TABLA ===================== */
+.toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+.search{position:relative;flex:1;min-width:200px}
+.search input{padding-left:40px}
+.search .s-ic{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text-faint)}
+.table-wrap{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:640px}
+thead th{text-align:left;padding:13px 16px;font-size:11px;text-transform:uppercase;letter-spacing:.8px;
+  color:var(--text-faint);font-weight:700;background:var(--surface);position:sticky;top:0;border-bottom:1px solid var(--border)}
+tbody td{padding:13px 16px;border-bottom:1px solid var(--border)}
+tbody tr{transition:.15s}
+tbody tr:hover{background:rgba(99,102,241,.05)}
+tbody tr:last-child td{border-bottom:none}
+tfoot td{padding:14px 16px;font-weight:700;border-top:2px solid var(--border);background:var(--surface)}
+.mono{font-variant-numeric:tabular-nums;font-weight:600}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:20px;font-size:11.5px;font-weight:700;letter-spacing:.3px}
+.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.p-reg{color:#0891b2;background:rgba(6,182,212,.12)}
+.p-prep{color:#d97706;background:rgba(245,158,11,.14)}
+.p-env{color:#7c3aed;background:rgba(139,92,246,.14)}
+.p-ent{color:#059669;background:rgba(16,185,129,.14)}
+/* estatus de envío */
+.p-pend{color:#d97706;background:rgba(245,158,11,.15)}
+.p-enviado{color:#2563eb;background:rgba(59,130,246,.14)}
+.p-entregado{color:#059669;background:rgba(16,185,129,.15)}
+.p-incidencia{color:#dc2626;background:rgba(239,68,68,.15)}
+.p-cancelado{color:#64748b;background:rgba(100,116,139,.16)}
+.p-incompleto{color:#ea580c;background:rgba(234,88,12,.15)}
+.p-ok{color:#059669;background:rgba(16,185,129,.14)}
+.p-low{color:#d97706;background:rgba(245,158,11,.14)}
+.p-out{color:#dc2626;background:rgba(239,68,68,.14)}
+.p-act{color:#059669;background:rgba(16,185,129,.14)}
+.p-ina{color:#64748b;background:rgba(100,116,139,.16)}
+.p-egr{color:#7c3aed;background:rgba(139,92,246,.14)}
+.p-baja{color:#dc2626;background:rgba(239,68,68,.14)}
+
+/* ===================== MODAL ===================== */
+.modal-bg{position:fixed;inset:0;background:rgba(8,9,16,.55);backdrop-filter:blur(5px);z-index:80;
+  display:none;align-items:center;justify-content:center;padding:20px}
+.modal-bg.open{display:flex}
+.modal{background:var(--surface-solid);border:1px solid var(--border);border-radius:var(--radius);
+  box-shadow:var(--shadow);max-width:780px;width:100%;max-height:88vh;overflow:auto;padding:24px}
+.modal-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:18px}
+.modal-head h2{font-size:19px;font-weight:800}
+.modal-head .sub{font-size:12.5px;color:var(--text-faint);margin-top:3px}
+.info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px 18px;
+  padding:16px;border:1px solid var(--border);border-radius:var(--radius-sm);background:rgba(99,102,241,.03);margin-bottom:20px}
+.info-item .k{font-size:10.5px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.6px;font-weight:700;margin-bottom:3px}
+.info-item .v{font-size:13.5px;font-weight:600;word-break:break-word}
+.row-actions{display:flex;gap:6px}
+.mini-btn{width:32px;height:32px;border-radius:9px;border:1px solid var(--border);background:var(--surface-solid);
+  cursor:pointer;font-size:13px;display:grid;place-items:center;color:var(--text-soft);transition:.2s}
+.mini-btn:hover{color:var(--brand);border-color:var(--brand)}
+.mini-btn.del:hover{color:var(--bad);border-color:var(--bad)}
+.empty{padding:50px 20px;text-align:center;color:var(--text-faint)}
+.empty .big{font-size:40px;margin-bottom:10px;opacity:.6}
+.tag{display:inline-block;padding:3px 9px;border-radius:8px;background:rgba(99,102,241,.1);color:var(--brand);font-size:11px;font-weight:600;margin:2px 4px 2px 0}
+.chip-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
+
+/* barra de stock */
+.bar{height:8px;border-radius:6px;background:var(--border);overflow:hidden;min-width:90px}
+.bar span{display:block;height:100%;border-radius:6px}
+
+/* ===================== GRÁFICAS ===================== */
+.chart-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:20px;margin-top:20px}
+.chart-card{background:var(--surface);backdrop-filter:blur(18px) saturate(150%);border:1px solid var(--border);
+  border-radius:var(--radius);box-shadow:var(--shadow);padding:20px 22px}
+.chart-card h3{font-size:14.5px;font-weight:700;margin-bottom:4px}
+.chart-card .csub{font-size:11.5px;color:var(--text-faint);margin-bottom:16px}
+/* barras horizontales */
+.bc-row{display:grid;grid-template-columns:120px 1fr auto;align-items:center;gap:12px;margin-bottom:11px}
+.bc-row:last-child{margin-bottom:0}
+.bc-label{font-size:12.5px;color:var(--text-soft);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bc-track{height:24px;border-radius:8px;background:var(--border);overflow:hidden;position:relative}
+.bc-track span{display:block;height:100%;border-radius:8px;min-width:2px;transition:width .6s cubic-bezier(.2,1,.3,1)}
+.bc-val{font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums;min-width:44px;text-align:right}
+/* donut */
+.donut-wrap{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.donut-wrap svg{flex:0 0 auto}
+.donut-center{font-size:22px;font-weight:800;fill:var(--text)}
+.donut-sub{font-size:9px;fill:var(--text-faint);text-transform:uppercase;letter-spacing:1px}
+.legend{display:flex;flex-direction:column;gap:9px;flex:1;min-width:130px}
+.legend-item{display:flex;align-items:center;gap:9px;font-size:12.5px}
+.legend-dot{width:11px;height:11px;border-radius:4px;flex:0 0 auto}
+.legend-item .lg-name{color:var(--text-soft);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.legend-item .lg-val{font-weight:700;font-variant-numeric:tabular-nums}
+.chart-empty{padding:30px 10px;text-align:center;color:var(--text-faint);font-size:13px}
+
+/* tarjetas reportes */
+.report-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px}
+.report-card{border:1px solid var(--border);border-radius:var(--radius);padding:22px;background:var(--surface-solid);
+  cursor:pointer;transition:.2s}
+.report-card:hover{transform:translateY(-3px);box-shadow:var(--shadow);border-color:var(--brand)}
+.report-card .r-ic{font-size:30px;margin-bottom:12px}
+.report-card h3{font-size:15px;margin-bottom:6px}
+.report-card p{font-size:12.5px;color:var(--text-faint);line-height:1.5}
+
+.switch-row{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid var(--border)}
+.switch-row:last-child{border:none}
+.switch-row .l b{display:block;font-size:14px}
+.switch-row .l span{font-size:12px;color:var(--text-faint)}
+
+#toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(120px);
+  background:var(--text);color:var(--bg);padding:13px 22px;border-radius:12px;font-size:14px;font-weight:600;
+  box-shadow:var(--shadow);z-index:99;transition:.4s cubic-bezier(.2,1.1,.3,1);display:flex;align-items:center;gap:10px}
+#toast.show{transform:translateX(-50%) translateY(0)}
+.hidden{display:none!important}
+
+/* ===================== IMPRESIÓN / PDF ===================== */
+#printArea{display:none}
+@media print{
+  body *{visibility:hidden}
+  #printArea,#printArea *{visibility:visible}
+  #printArea{display:block;position:absolute;left:0;top:0;width:100%;padding:24px;color:#000;background:#fff}
+  #printArea table{width:100%;border-collapse:collapse;font-size:12px}
+  #printArea th,#printArea td{border:1px solid #ccc;padding:7px 9px;text-align:left}
+  #printArea thead th{background:#eef}
+  .print-head{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #6366f1;padding-bottom:12px;margin-bottom:18px}
+  .print-head h1{font-size:22px;color:#4338ca}
+  .print-head .meta{text-align:right;font-size:11px;color:#555}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="logo">
+      <div class="logo-mark">CG</div>
+      <div class="logo-text"><b>CCRGM</b><span>CRM Envíos</span></div>
+    </div>
+    <div class="nav-label">Principal</div>
+    <div class="nav-item active" data-view="dashboard"><span class="ic">◈</span> Dashboard</div>
+    <div class="nav-item" data-view="alumnos"><span class="ic">🎓</span> Alumnos</div>
+    <div class="nav-item" data-view="cursos"><span class="ic">📚</span> Cursos</div>
+    <div class="nav-item" data-view="envios"><span class="ic">📦</span> Envíos</div>
+    <div class="nav-label">Materiales</div>
+    <div class="nav-item" data-view="costos"><span class="ic">💲</span> Costos de materiales</div>
+    <div class="nav-item" data-view="faltante"><span class="ic">⚠️</span> Material faltante <span class="badge" id="navFaltante">0</span></div>
+    <div class="nav-label">Sistema</div>
+    <div class="nav-item" data-view="reportes"><span class="ic">📄</span> Reportes (PDF)</div>
+    <div class="nav-item" data-view="config"><span class="ic">⚙️</span> Configuración</div>
+    <div class="sidebar-foot"><b>CCRGM</b> · Centro de Control de<br>Recursos y Gestión de Materiales<br><br>© 2026 · v2.0</div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <main class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="icon-btn menu-toggle" id="menuToggle">☰</button>
+        <div>
+          <h1 id="viewTitle">Dashboard</h1>
+          <div class="sub" id="viewSub">Resumen general del sistema CCRGM</div>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button class="icon-btn" id="themeBtn" title="Cambiar tema">◐</button>
+        <button class="btn btn-primary btn-sm" id="newBtn">＋ Nuevo envío</button>
+      </div>
+    </div>
+
+    <!-- ====== 1. DASHBOARD ====== -->
+    <section id="view-dashboard">
+      <!-- Indicadores -->
+      <div class="kpis">
+        <div class="card kpi"><div class="kpi-top"><span class="kpi-label">Total de envíos</span><div class="kpi-ic" style="background:rgba(139,92,246,.14);color:var(--brand-2)">📦</div></div><div class="kpi-val" id="kTot">0</div><div class="kpi-delta" id="kAluDelta">0 alumnos registrados</div></div>
+        <div class="card kpi"><div class="kpi-top"><span class="kpi-label">Envíos pendientes</span><div class="kpi-ic" style="background:rgba(245,158,11,.14);color:var(--warn)">⏳</div></div><div class="kpi-val" id="kPend">0</div><div class="kpi-delta">Sin entregar</div></div>
+        <div class="card kpi"><div class="kpi-top"><span class="kpi-label">Envíos realizados</span><div class="kpi-ic" style="background:rgba(16,185,129,.14);color:var(--good)">✓</div></div><div class="kpi-val" id="kReal">0</div><div class="kpi-delta" id="kRealPct">0% entregados</div></div>
+        <div class="card kpi"><div class="kpi-top"><span class="kpi-label">Paquetes c/ material faltante</span><div class="kpi-ic" style="background:rgba(239,68,68,.14);color:var(--bad)">⚠️</div></div><div class="kpi-val" id="kPaqFalta">0</div><div class="kpi-delta">Requieren reposición</div></div>
+        <div class="card kpi"><div class="kpi-top"><span class="kpi-label">Gasto total en envíos</span><div class="kpi-ic" style="background:rgba(6,182,212,.14);color:var(--accent)">🚚</div></div><div class="kpi-val mono" id="kGastoEnv">$0</div><div class="kpi-delta">Valor de paquetes enviados</div></div>
+        <div class="card kpi"><div class="kpi-top"><span class="kpi-label">Gasto en material faltante</span><div class="kpi-ic" style="background:rgba(245,158,11,.14);color:var(--warn)">🧾</div></div><div class="kpi-val mono" id="kGastoFalta">$0</div><div class="kpi-delta">Costo de reposición</div></div>
+        <div class="card kpi"><div class="kpi-top"><span class="kpi-label">Gasto total general</span><div class="kpi-ic" style="background:rgba(99,102,241,.14);color:var(--brand)">$</div></div><div class="kpi-val mono" id="kGastoGen">$0</div><div class="kpi-delta">Envíos + reposición</div></div>
+        <div class="card kpi"><div class="kpi-top"><span class="kpi-label">Promedio por paquete</span><div class="kpi-ic" style="background:rgba(139,92,246,.14);color:var(--brand-2)">📊</div></div><div class="kpi-val mono" id="kProm">$0</div><div class="kpi-delta">Costo medio de cada envío</div></div>
+      </div>
+
+      <!-- Alumnos por curso -->
+      <div class="chart-card" style="margin-bottom:0">
+        <h3>Alumnos registrados por curso</h3>
+        <div class="csub">Distribución del total de alumnos inscritos en cada curso</div>
+        <div id="chAluCurso"></div>
+      </div>
+
+      <!-- Gráficas -->
+      <div class="chart-grid">
+        <div class="chart-card"><h3>Cantidad de envíos por curso</h3><div class="csub">Número de paquetes enviados por cada curso</div><div id="chEnvCurso"></div></div>
+        <div class="chart-card"><h3>Gasto total por curso</h3><div class="csub">Costo total acumulado (materiales + envío + impuestos)</div><div id="chGastoCurso"></div></div>
+        <div class="chart-card"><h3>Costo de material vs. costo de envío</h3><div class="csub">Comparación de la composición del gasto total</div><div id="chMatEnv"></div></div>
+        <div class="chart-card"><h3>Distribución de envíos por paquetería</h3><div class="csub">Modalidad de envío utilizada</div><div id="chPaqueteria"></div></div>
+        <div class="chart-card"><h3>Envíos por estatus</h3><div class="csub">Estado actual de cada envío</div><div id="chEstatus"></div></div>
+        <div class="chart-card">
+          <h3>Envíos recientes</h3><div class="csub">Últimos movimientos registrados</div>
+          <div class="table-wrap" style="border:none"><table style="min-width:auto"><tbody id="dashRecent"></tbody></table></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====== 2. ALUMNOS ====== -->
+    <section id="view-alumnos" class="hidden">
+      <div class="card">
+        <div class="section-title"><h2 id="aluFormTitle">Registrar alumno</h2><button type="button" class="btn btn-ghost btn-sm" id="aluCancel">Limpiar</button></div>
+        <form id="aluForm">
+          <input type="hidden" id="aluEditId">
+          <div class="form-grid">
+            <div class="field"><label>Número de alumno</label><input id="aluNum" placeholder="Ej. 2026-001" required></div>
+            <div class="field"><label>Nombre completo</label><input id="aluNombre" placeholder="Ej. María Fernanda López" required></div>
+            <div class="field"><label>Ciudad</label><input id="aluCiudad" placeholder="Ej. Guadalajara"></div>
+            <div class="field"><label>Estado</label><input id="aluEstado" placeholder="Ej. Jalisco"></div>
+            <div class="field"><label>Teléfono</label><input id="aluTel" placeholder="Ej. 55 1234 5678"></div>
+            <div class="field"><label>Correo electrónico</label><input id="aluEmail" type="email" placeholder="alumno@correo.com"></div>
+            <div class="field"><label>Curso</label><select id="aluCurso"></select></div>
+            <div class="field"><label>Modalidad</label>
+              <select id="aluModalidad"><option>Estándar</option><option>Express</option><option>Digital</option><option>Local</option></select></div>
+            <div class="field"><label>Estatus del alumno</label>
+              <select id="aluEstatus"><option>Activo</option><option>Inactivo</option><option>Egresado</option><option>Baja</option></select></div>
+            <div class="field"><label>&nbsp;</label><div class="hint" style="padding-top:12px">El número y el nombre se guardan por separado.</div></div>
+            <div class="field full"><label>Notas</label><input id="aluNotas" placeholder="Observaciones, becas, referencias…"></div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">💾 Guardar alumno</button>
+          </div>
+        </form>
+      </div>
+      <div class="card">
+        <div class="section-title"><h2>Alumnos registrados</h2></div>
+        <div class="toolbar">
+          <div class="search"><span class="s-ic">⌕</span><input id="aluBuscar" placeholder="Buscar por nombre o número de alumno…"></div>
+          <select id="aluFCurso" style="max-width:190px"><option value="">Todos los cursos</option></select>
+          <select id="aluFCiudad" style="max-width:170px"><option value="">Todas las ciudades</option></select>
+          <select id="aluFEstatus" style="max-width:160px"><option value="">Todos los estatus</option><option>Activo</option><option>Inactivo</option><option>Egresado</option><option>Baja</option></select>
+        </div>
+        <div class="table-wrap"><table><thead><tr><th>N.º alumno</th><th>Nombre</th><th>Ubicación</th><th>Contacto</th><th>Curso</th><th>Modalidad</th><th>Estatus</th><th>Envíos</th><th></th></tr></thead><tbody id="aluBody"></tbody></table></div>
+      </div>
+    </section>
+
+    <!-- ====== 3. CURSOS ====== -->
+    <section id="view-cursos" class="hidden">
+      <div class="card">
+        <div class="section-title"><h2>Cursos y catálogo de materiales</h2></div>
+        <div class="table-wrap"><table><thead><tr><th>Curso</th><th>Clave</th><th>Materiales sugeridos</th><th>Alumnos</th><th>Costo base paquete</th></tr></thead><tbody id="cursosBody"></tbody></table></div>
+      </div>
+    </section>
+
+    <!-- ====== 4. ENVÍOS ====== -->
+    <section id="view-envios" class="hidden">
+      <!-- Formulario -->
+      <div id="envioFormWrap" class="hidden">
+        <div class="grid-2">
+          <div class="card">
+            <div class="section-title"><h2 id="formTitle">Registrar nuevo envío</h2><button class="btn btn-ghost btn-sm" id="backToList">← Volver a la lista</button></div>
+            <form id="envioForm">
+              <input type="hidden" id="editId">
+              <div class="form-grid">
+
+                <!-- Datos del alumno -->
+                <div class="form-sec">Datos del alumno</div>
+                <div class="field"><label>Id del alumno</label><select id="alumno" required></select></div>
+                <div class="field"><label>Curso</label><select id="curso" required></select></div>
+                <div class="field"><label>Ciudad</label><input id="evCiudad" placeholder="Ciudad"></div>
+                <div class="field"><label>Estado</label><input id="evEstado" placeholder="Estado"></div>
+                <div class="field"><label>Teléfono</label><input id="evTel" placeholder="Teléfono de contacto"></div>
+                <div class="field"><label>Código postal</label><input id="evCP" placeholder="Ej. 44100"></div>
+                <div class="field full"><label>Dirección</label><input id="direccion" placeholder="Calle, número, colonia"></div>
+
+                <!-- Contenido y empaque -->
+                <div class="form-sec">Contenido y empaque</div>
+                <div class="field"><label>Tipo de empaque</label>
+                  <select id="tipoEmpaque">
+                    <option>Caja</option><option>Sobre</option><option>Bolsa</option>
+                    <option>Plataforma</option><option>Plantel López Cotilla</option>
+                  </select></div>
+                <div class="field"><label>Costo del empaque</label><input id="costoEmpaque" type="number" min="0" step="0.01" value="0"></div>
+                <div class="field"><label>Peso del empaque (kg)</label><input id="peso" type="number" min="0" step="0.01" placeholder="Ej. 1.5"></div>
+                <div class="field"><label>Medidas del empaque (cm)</label><input id="medidas" placeholder="Ej. 30 × 20 × 10"></div>
+                <div class="field full"><label>Materiales del paquete</label>
+                  <div class="materials-box" id="matBox"></div>
+                  <button type="button" class="btn btn-ghost btn-sm" id="addMat" style="margin-top:4px">＋ Agregar material</button>
+                  <span class="hint" id="costoMatHint">Costo del material: $0.00</span></div>
+                <div class="field full"><label>Materiales faltantes</label><input id="materialesFaltantes" placeholder="Ej. Workbook + audio (pendiente de surtir)"></div>
+
+                <!-- Información de envío -->
+                <div class="form-sec">Información de envío</div>
+                <div class="field"><label>Paquetería</label>
+                  <select id="paqueteria"><option>Estafeta</option><option>DHL</option><option>FedEx</option><option>Paquete Express</option><option>Correos de México</option><option>Entrega local</option></select></div>
+                <div class="field"><label>Tipo de servicio</label>
+                  <select id="tipoServicio"><option>Estándar</option><option>Express</option><option>Económico</option><option>Digital</option><option>Recolección local</option></select></div>
+                <div class="field"><label>¿Zona extendida?</label>
+                  <select id="zonaExtendida"><option value="no">No</option><option value="si">Sí</option></select></div>
+                <div class="field"><label>Costo por zona extendida</label><input id="costoZonaExt" type="number" min="0" step="0.01" value="0"></div>
+                <div class="field"><label>Costo base del envío</label><input id="costoBaseEnvio" type="number" min="0" step="0.01" value="0"></div>
+                <div class="field"><label>Número de guía</label><input id="guia" placeholder="Ej. 7701234567"></div>
+                <div class="field"><label>Fecha del envío</label><input id="fechaEnvio" type="date"></div>
+                <div class="field"><label>Fecha estimada de entrega</label><input id="fechaEstimada" type="date"></div>
+                <div class="field"><label>Fecha real de entrega</label><input id="fechaReal" type="date"></div>
+                <div class="field"><label>Tasa de impuesto (%)</label><input id="tasaImp" type="number" min="0" step="0.5"></div>
+                <div class="field"><label>Estatus del envío</label>
+                  <select id="estado">
+                    <option>Pendiente de enviar</option><option>Enviado</option><option>Entregado</option>
+                    <option>Incidencia</option><option>Cancelado</option><option>Material incompleto</option>
+                  </select></div>
+                <div class="field full"><label>Notas</label><input id="notas" placeholder="Observaciones del envío"></div>
+              </div>
+              <div class="form-actions">
+                <button type="button" class="btn btn-ghost" id="cancelEdit">Limpiar</button>
+                <button type="submit" class="btn btn-primary">💾 Guardar envío</button>
+              </div>
+            </form>
+          </div>
+          <div class="card" style="position:sticky;top:20px">
+            <div class="section-title"><h2>Cálculo automático</h2></div>
+            <div class="cost-line"><span>Costo de materiales</span><b class="mono" id="cMat">$0.00</b></div>
+            <div class="cost-line"><span>Costo del empaque</span><b class="mono" id="cEmp">$0.00</b></div>
+            <div class="cost-line"><span>Costo base del envío</span><b class="mono" id="cBase">$0.00</b></div>
+            <div class="cost-line"><span>Costo por zona extendida</span><b class="mono" id="cZona">$0.00</b></div>
+            <div class="cost-line"><span>Subtotal del paquete</span><b class="mono" id="cSub">$0.00</b></div>
+            <div class="cost-line"><span>Impuestos (<span id="cTasa">16</span>%)</span><b class="mono" id="cImp">$0.00</b></div>
+            <div class="cost-total"><span class="lbl">Costo total del paquete</span><span class="amt mono" id="cTotal">$0.00</span></div>
+            <p class="hint" style="margin-top:14px;line-height:1.6">Total = materiales + empaque + envío base + zona extendida, más impuestos. Se recalcula en tiempo real.</p>
+          </div>
+        </div>
+      </div>
+      <!-- Lista -->
+      <div id="envioListWrap" class="card">
+        <div class="section-title"><h2>Envíos registrados</h2>
+          <div style="display:flex;gap:8px"><button class="btn btn-ghost btn-sm" id="exportBtn">⭳ CSV</button><button class="btn btn-primary btn-sm" id="newEnvioBtn">＋ Nuevo envío</button></div></div>
+        <div class="toolbar">
+          <div class="search"><span class="s-ic">⌕</span><input id="buscar" placeholder="Buscar por alumno, id o folio…"></div>
+          <select id="filtroEstado" style="max-width:200px"><option value="">Todos los estatus</option><option>Pendiente de enviar</option><option>Enviado</option><option>Entregado</option><option>Incidencia</option><option>Cancelado</option><option>Material incompleto</option></select>
+          <select id="filtroCurso" style="max-width:210px"><option value="">Todos los cursos</option></select>
+        </div>
+        <div class="table-wrap"><table><thead><tr><th>Folio</th><th>Alumno</th><th>Curso</th><th>Empaque</th><th>Servicio / Guía</th><th>Materiales</th><th>Impuesto</th><th>Total</th><th>Estatus</th><th></th></tr></thead><tbody id="tbody"></tbody></table></div>
+      </div>
+    </section>
+
+    <!-- ====== 5. COSTOS DE MATERIALES ====== -->
+    <section id="view-costos" class="hidden">
+      <div class="kpis">
+        <div class="card kpi"><div class="kpi-top"><span class="kpi-label">Total materiales</span><div class="kpi-ic" style="background:rgba(99,102,241,.14);color:var(--brand)">📦</div></div><div class="kpi-val mono" id="coMat">$0</div></div>
+        <div class="card kpi"><div class="kpi-top"><span class="kpi-label">Total envíos</span><div class="kpi-ic" style="background:rgba(6,182,212,.14);color:var(--accent)">🚚</div></div><div class="kpi-val mono" id="coEnv">$0</div></div>
+        <div class="card kpi"><div class="kpi-top"><span class="kpi-label">Total impuestos</span><div class="kpi-ic" style="background:rgba(245,158,11,.14);color:var(--warn)">%</div></div><div class="kpi-val mono" id="coImp">$0</div></div>
+        <div class="card kpi"><div class="kpi-top"><span class="kpi-label">Total general</span><div class="kpi-ic" style="background:rgba(16,185,129,.14);color:var(--good)">$</div></div><div class="kpi-val mono" id="coTot">$0</div></div>
+      </div>
+      <div class="card">
+        <div class="section-title"><h2>Desglose de costos por material</h2><button class="btn btn-ghost btn-sm" data-report="costos">📄 Exportar PDF</button></div>
+        <div class="table-wrap"><table><thead><tr><th>Material</th><th>Unidades enviadas</th><th>Precio unitario prom.</th><th>Costo total</th><th>% del total</th></tr></thead><tbody id="costosBody"></tbody><tfoot id="costosFoot"></tfoot></table></div>
+      </div>
+      <div class="card">
+        <div class="section-title"><h2>Costos por curso</h2></div>
+        <div class="table-wrap"><table><thead><tr><th>Curso</th><th>Envíos</th><th>Materiales</th><th>Envío</th><th>Impuestos</th><th>Total</th></tr></thead><tbody id="costosCursoBody"></tbody></table></div>
+      </div>
+    </section>
+
+    <!-- ====== 6. MATERIAL FALTANTE ====== -->
+    <section id="view-faltante" class="hidden">
+      <div class="card">
+        <div class="section-title"><h2>Inventario y material faltante</h2>
+          <div style="display:flex;gap:8px"><button class="btn btn-ghost btn-sm" data-report="faltante">📄 Exportar PDF</button></div></div>
+        <p class="hint" style="margin-bottom:16px">Compara el <b>stock disponible</b> contra la <b>demanda</b> (unidades comprometidas en envíos). El sistema marca el material a reponer cuando el stock es insuficiente o cae bajo el mínimo. Edita el stock con ✎.</p>
+        <div class="toolbar"><div class="search"><span class="s-ic">⌕</span><input id="invBuscar" placeholder="Buscar material…"></div>
+          <select id="invFiltro" style="max-width:200px"><option value="">Todos</option><option value="out">Solo faltantes</option><option value="low">Stock bajo</option><option value="ok">Disponibles</option></select></div>
+        <div class="table-wrap"><table><thead><tr><th>Material</th><th>Stock</th><th>Demanda</th><th>Mínimo</th><th>Disponibilidad</th><th>Faltan</th><th>Estado</th><th></th></tr></thead><tbody id="invBody"></tbody></table></div>
+      </div>
+    </section>
+
+    <!-- ====== 7. REPORTES ====== -->
+    <section id="view-reportes" class="hidden">
+      <div class="card">
+        <div class="section-title"><h2>Reportes descargables en PDF</h2></div>
+        <p class="hint" style="margin-bottom:18px">Genera un reporte con formato de impresión. En el diálogo, elige <b>“Guardar como PDF”</b> como destino para descargarlo.</p>
+        <div class="report-grid">
+          <div class="report-card" data-report="envios"><div class="r-ic">📦</div><h3>Reporte de envíos</h3><p>Listado completo con costos, impuestos y total por paquete.</p></div>
+          <div class="report-card" data-report="costos"><div class="r-ic">💲</div><h3>Reporte de costos</h3><p>Desglose de costos de materiales y totales del sistema.</p></div>
+          <div class="report-card" data-report="faltante"><div class="r-ic">⚠️</div><h3>Material faltante</h3><p>Inventario, demanda y artículos por reponer.</p></div>
+          <div class="report-card" data-report="alumnos"><div class="r-ic">🎓</div><h3>Reporte de alumnos</h3><p>Directorio de alumnos, cursos y número de envíos.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====== 8. CONFIGURACIÓN ====== -->
+    <section id="view-config" class="hidden">
+      <div class="grid-2">
+        <div class="card">
+          <div class="section-title"><h2>Parámetros de cálculo</h2></div>
+          <div class="field" style="margin-bottom:14px"><label>Tasa de impuesto por defecto (%)</label><input id="cfgTasa" type="number" min="0" step="0.5"></div>
+          <div class="field" style="margin-bottom:14px"><label>Moneda</label><select id="cfgMoneda"><option value="MXN">Peso mexicano (MXN $)</option><option value="USD">Dólar (USD $)</option><option value="EUR">Euro (EUR €)</option></select></div>
+          <div class="section-title" style="margin-top:10px"><h2 style="font-size:15px">Costos de envío por modalidad</h2></div>
+          <div class="form-grid">
+            <div class="field"><label>Estándar</label><input id="cfgEstandar" type="number" min="0" step="0.5"></div>
+            <div class="field"><label>Express</label><input id="cfgExpress" type="number" min="0" step="0.5"></div>
+            <div class="field"><label>Digital</label><input id="cfgDigital" type="number" min="0" step="0.5"></div>
+            <div class="field"><label>Local</label><input id="cfgLocal" type="number" min="0" step="0.5"></div>
+          </div>
+          <div class="form-actions"><button class="btn btn-primary" id="cfgSave">💾 Guardar configuración</button></div>
+        </div>
+        <div class="card">
+          <div class="section-title"><h2>Preferencias y datos</h2></div>
+          <div class="switch-row"><div class="l"><b>Tema oscuro</b><span>Cambia la apariencia de la interfaz</span></div><button class="btn btn-ghost btn-sm" id="cfgTheme">Alternar</button></div>
+          <div class="switch-row"><div class="l"><b>Exportar respaldo</b><span>Descarga todos los datos en JSON</span></div><button class="btn btn-ghost btn-sm" id="cfgExport">⭳ Exportar</button></div>
+          <div class="switch-row"><div class="l"><b>Importar respaldo</b><span>Restaura datos desde un archivo JSON</span></div><label class="btn btn-ghost btn-sm" style="cursor:pointer">⭱ Importar<input type="file" id="cfgImport" accept="application/json" hidden></label></div>
+          <div class="switch-row"><div class="l"><b>Restablecer datos de ejemplo</b><span>Vuelve al estado inicial de demostración</span></div><button class="btn btn-ghost btn-sm" id="cfgSeed">↺ Restablecer</button></div>
+          <div class="switch-row"><div class="l"><b style="color:var(--bad)">Borrar todos los datos</b><span>Elimina alumnos, envíos e inventario</span></div><button class="btn btn-ghost btn-sm" id="cfgWipe" style="color:var(--bad);border-color:var(--bad)">🗑 Borrar</button></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ====== MODAL HISTORIAL DE ENVÍOS ====== -->
+<div class="modal-bg" id="histModal">
+  <div class="modal">
+    <div class="modal-head">
+      <div><h2 id="histNombre">Historial de envíos</h2><div class="sub" id="histSub"></div></div>
+      <button class="icon-btn" id="histClose">✕</button>
+    </div>
+    <div class="info-grid" id="histInfo"></div>
+    <div class="section-title"><h2 style="font-size:15px">Envíos del alumno</h2><button class="btn btn-primary btn-sm" id="histNuevo">＋ Nuevo envío</button></div>
+    <div class="table-wrap"><table><thead><tr><th>Folio</th><th>Curso</th><th>Modalidad</th><th>Materiales</th><th>Impuesto</th><th>Total</th><th>Estado</th></tr></thead><tbody id="histBody"></tbody></table></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<div id="printArea"></div>
+
+<script>
+/* ==================== CATÁLOGO DE CURSOS ==================== */
+const CURSOS=[
+ {clave:'MAT-101',nombre:'Matemáticas Básicas',base:120,mats:[{nombre:'Libro de texto Matemáticas',cant:1,precio:320},{nombre:'Cuaderno de ejercicios',cant:2,precio:65}]},
+ {clave:'ESP-201',nombre:'Español y Redacción',base:100,mats:[{nombre:'Antología de lecturas',cant:1,precio:280},{nombre:'Guía de ortografía',cant:1,precio:110}]},
+ {clave:'CIE-301',nombre:'Ciencias Naturales',base:150,mats:[{nombre:'Kit de laboratorio',cant:1,precio:540},{nombre:'Manual de prácticas',cant:1,precio:150}]},
+ {clave:'ING-401',nombre:'Inglés Intermedio',base:130,mats:[{nombre:"Student's Book",cant:1,precio:390},{nombre:'Workbook + audio',cant:1,precio:210}]},
+ {clave:'HIS-501',nombre:'Historia Universal',base:90,mats:[{nombre:'Atlas histórico',cant:1,precio:260},{nombre:'Línea del tiempo impresa',cant:1,precio:85}]},
+ {clave:'INF-601',nombre:'Informática Aplicada',base:160,mats:[{nombre:'Manual de software',cant:1,precio:300},{nombre:'Memoria USB 32GB',cant:1,precio:180}]},
+];
+
+/* ==================== CONFIG + ESTADO ==================== */
+const KEY='ccrgm_v3';
+const DEFAULT_CFG={tasa:16,moneda:'MXN',envio:{'Estándar':90,'Express':180,'Digital':0,'Local':45}};
+let db;                     // se inicializa más abajo, tras declarar folioSeq/uid/folio/seed
+function load(){
+  const raw=JSON.parse(localStorage.getItem(KEY)||'null');
+  if(raw) return raw;
+  return seed();
+}
+function persist(){localStorage.setItem(KEY,JSON.stringify(db))}
+
+const $=s=>document.querySelector(s);
+const MON={MXN:'$',USD:'$',EUR:'€'};
+const money=n=>MON[db?.cfg?.moneda||'MXN']+Number(n||0).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
+let folioSeq=1040, idSeq=0;
+const uid=()=>'x'+(++idSeq)+'_'+(idSeq*7%97);
+const folio=()=>'CG-'+(++folioSeq);
+
+function seed(){
+  folioSeq=1040;
+  const alumnos=[
+    {id:'a1',numero:'2026-001',nombre:'María Fernanda López',ciudad:'Guadalajara',estado:'Jalisco',tel:'33 1000 2000',email:'mf.lopez@correo.com',curso:'MAT-101',modalidad:'Estándar',notas:'Beca del 50%.',estatus:'Activo'},
+    {id:'a2',numero:'2026-002',nombre:'Carlos Ramírez Díaz',ciudad:'Monterrey',estado:'Nuevo León',tel:'81 3000 4000',email:'c.ramirez@correo.com',curso:'ING-401',modalidad:'Express',notas:'',estatus:'Activo'},
+    {id:'a3',numero:'2026-003',nombre:'Ana Sofía Torres',ciudad:'Ciudad de México',estado:'CDMX',tel:'55 5000 6000',email:'a.torres@correo.com',curso:'CIE-301',modalidad:'Estándar',notas:'Requiere factura.',estatus:'Activo'},
+    {id:'a4',numero:'2026-004',nombre:'Diego Hernández Ruiz',ciudad:'Puebla',estado:'Puebla',tel:'22 7000 8000',email:'d.hernandez@correo.com',curso:'INF-601',modalidad:'Digital',notas:'',estatus:'Inactivo'},
+  ];
+  const mk=(num,o)=>{const a=alumnos.find(x=>x.numero===num);const c=CURSOS.find(x=>x.clave===a.curso);
+    return {id:uid(),folio:folio(),numero:num,curso:a.curso,
+      ciudad:a.ciudad,estado_geo:a.estado,direccion:'Calle Principal 100, Col. Centro',cp:o.cp||'44100',tel:a.tel,
+      tipoEmpaque:o.emp||'Caja',costoEmpaque:o.ce||35,peso:o.peso||1.2,medidas:o.med||'30 × 20 × 10',materialesFaltantes:o.falt||'',
+      paqueteria:o.paq||'Estafeta',tipoServicio:o.serv||'Estándar',zonaExtendida:o.zona||'no',costoZonaExt:o.cz||0,
+      costoBaseEnvio:o.base??(DEFAULT_CFG.envio[o.serv||'Estándar']||90),guia:o.guia||'',
+      fechaEnvio:o.fe||'',fechaEstimada:o.fest||'',fechaReal:o.fr||'',notas:o.notas||'',
+      tasa:16,estado:o.est,mats:c.mats.map(m=>({...m}))};};
+  const envios=[
+    mk('2026-001',{serv:'Estándar',est:'Entregado',paq:'Estafeta',guia:'7701234567',fe:'2026-06-20',fest:'2026-06-25',fr:'2026-06-24',cz:0}),
+    mk('2026-002',{serv:'Express',est:'Enviado',paq:'DHL',guia:'DHL889900',emp:'Sobre',ce:20,base:180,fe:'2026-07-10',fest:'2026-07-12'}),
+    mk('2026-003',{serv:'Estándar',est:'Pendiente de enviar',paq:'FedEx',emp:'Caja',zona:'si',cz:60}),
+    mk('2026-001',{serv:'Express',est:'Material incompleto',paq:'Estafeta',emp:'Bolsa',ce:15,base:180,falt:'Cuaderno de ejercicios (1 pieza)'}),
+  ];
+  // inventario: stock por material del catálogo
+  const inv={};
+  CURSOS.forEach(c=>c.mats.forEach(m=>{ if(!(m.nombre in inv)) inv[m.nombre]={stock:5,minimo:3,precio:m.precio}; }));
+  return {cfg:JSON.parse(JSON.stringify(DEFAULT_CFG)),alumnos,envios,inventario:inv};
+}
+
+db = load();               // ahora sí: folioSeq/uid/folio/seed ya están definidos
+
+/* ==================== CÁLCULO ==================== */
+function calcEnvio(e){
+  const cMat=(e.mats||[]).reduce((s,m)=>s+m.cant*m.precio,0);
+  const cEmp=+e.costoEmpaque||0;
+  const cBase=+e.costoBaseEnvio||0;
+  const cZona=(e.zonaExtendida==='si'||e.zonaExtendida===true)?(+e.costoZonaExt||0):0;
+  const cEnvio=cBase+cZona;                 // envío (base + zona extendida)
+  const sub=cMat+cEmp+cEnvio;
+  const imp=sub*((+e.tasa||0)/100);
+  return {cMat,cEmp,cBase,cZona,cEnvio,envio:cEmp+cEnvio,sub,imp,total:sub+imp};
+}
+const cursoNombre=cl=>{const c=CURSOS.find(x=>x.clave===cl);return c?c.nombre:cl};
+const alumnoDe=num=>db.alumnos.find(a=>a.numero===num);
+
+/* ==================== NAVEGACIÓN ==================== */
+const VIEWS=['dashboard','alumnos','cursos','envios','costos','faltante','reportes','config'];
+const TITLES={
+  dashboard:['Dashboard','Resumen general del sistema CCRGM'],
+  alumnos:['Alumnos','Registro y administración de alumnos'],
+  cursos:['Cursos','Catálogo de cursos y materiales'],
+  envios:['Envíos','Registrar, consultar y administrar envíos'],
+  costos:['Costos de materiales','Desglose de costos, impuestos y totales'],
+  faltante:['Material faltante','Inventario y artículos por reponer'],
+  reportes:['Reportes','Genera y descarga reportes en PDF'],
+  config:['Configuración','Parámetros de cálculo y gestión de datos'],
+};
+function show(v){
+  VIEWS.forEach(x=>$('#view-'+x).classList.toggle('hidden',x!==v));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.view===v));
+  $('#viewTitle').textContent=TITLES[v][0];
+  $('#viewSub').textContent=TITLES[v][1];
+  $('#sidebar').classList.remove('open');
+  if(v==='dashboard') renderDashboard();
+  if(v==='alumnos') renderAlumnos();
+  if(v==='cursos') renderCursos();
+  if(v==='envios'){showList();renderEnvios();}
+  if(v==='costos') renderCostos();
+  if(v==='faltante') renderInv();
+  if(v==='config') loadCfgForm();
+}
+document.querySelectorAll('.nav-item').forEach(n=>n.onclick=()=>show(n.dataset.view));
+document.querySelectorAll('[data-goto]').forEach(b=>b.onclick=()=>show(b.dataset.goto));
+$('#menuToggle').onclick=()=>$('#sidebar').classList.toggle('open');
+$('#newBtn').onclick=()=>{show('envios');openForm();};
+
+/* ==================== TEMA ==================== */
+function toggleTheme(){const el=document.documentElement;el.dataset.theme=el.dataset.theme==='dark'?'light':'dark';localStorage.setItem('ccrgm_theme',el.dataset.theme);}
+$('#themeBtn').onclick=toggleTheme;
+if(localStorage.getItem('ccrgm_theme'))document.documentElement.dataset.theme=localStorage.getItem('ccrgm_theme');
+
+/* ==================== SELECTS ==================== */
+function cursoOpts(){return CURSOS.map(c=>`<option value="${c.clave}">${c.nombre} (${c.clave})</option>`).join('')}
+function fillSelects(){
+  $('#aluCurso').innerHTML=cursoOpts();
+  $('#curso').innerHTML=cursoOpts();
+  $('#filtroCurso').innerHTML='<option value="">Todos los cursos</option>'+cursoOpts();
+  $('#aluFCurso').innerHTML='<option value="">Todos los cursos</option>'+cursoOpts();
+  $('#alumno').innerHTML=db.alumnos.map(a=>`<option value="${a.numero}">${a.nombre} · ${a.numero}</option>`).join('');
+  const ciudades=[...new Set(db.alumnos.map(a=>a.ciudad).filter(Boolean))].sort();
+  $('#aluFCiudad').innerHTML='<option value="">Todas las ciudades</option>'+ciudades.map(c=>`<option>${c}</option>`).join('');
+}
+
+/* ============================================================ */
+/* 1. DASHBOARD                                                  */
+/* ============================================================ */
+const PAL=['#6366f1','#8b5cf6','#06b6d4','#10b981','#f59e0b','#ef4444','#ec4899','#14b8a6'];
+
+/* --- gráfica de barras horizontales --- */
+function barChart(data,fmt){
+  data=data.filter(d=>d.value>0||d.always);
+  if(!data.length)return `<div class="chart-empty">Sin datos para mostrar</div>`;
+  const max=Math.max(...data.map(d=>d.value),1);
+  return data.map((d,i)=>`<div class="bc-row">
+    <div class="bc-label" title="${d.label}">${d.label}</div>
+    <div class="bc-track"><span style="width:${Math.max(d.value/max*100,d.value?2:0)}%;background:${d.color||PAL[i%PAL.length]}"></span></div>
+    <div class="bc-val">${fmt?fmt(d.value):d.value}</div></div>`).join('');
+}
+/* --- gráfica de dona (SVG) --- */
+function donut(data,centerLabel,fmt){
+  data=data.filter(d=>d.value>0);
+  const total=data.reduce((s,d)=>s+d.value,0);
+  if(!total)return `<div class="chart-empty">Sin datos para mostrar</div>`;
+  const r=54,cir=2*Math.PI*r;let acc=0;
+  const segs=data.map((d,i)=>{
+    const len=d.value/total*cir;
+    const s=`<circle r="${r}" cx="70" cy="70" fill="none" stroke="${d.color||PAL[i%PAL.length]}" stroke-width="20"
+      stroke-dasharray="${len} ${cir-len}" stroke-dashoffset="${-acc}" transform="rotate(-90 70 70)"
+      style="transition:stroke-dasharray .6s"></circle>`;
+    acc+=len;return s;
+  }).join('');
+  const leg=data.map((d,i)=>`<div class="legend-item"><span class="legend-dot" style="background:${d.color||PAL[i%PAL.length]}"></span>
+    <span class="lg-name">${d.label}</span><span class="lg-val">${fmt?fmt(d.value):d.value}</span></div>`).join('');
+  return `<div class="donut-wrap">
+    <svg width="140" height="140" viewBox="0 0 140 140">
+      <circle r="${r}" cx="70" cy="70" fill="none" stroke="var(--border)" stroke-width="20"></circle>
+      ${segs}
+      <text x="70" y="68" text-anchor="middle" class="donut-center">${fmt?fmt(total):total}</text>
+      <text x="70" y="84" text-anchor="middle" class="donut-sub">${centerLabel||'Total'}</text>
+    </svg>
+    <div class="legend">${leg}</div></div>`;
+}
+const short=n=>MON[db.cfg.moneda]+(n>=1000?(n/1000).toFixed(1)+'k':Math.round(n));
+
+function renderDashboard(){
+  const E=db.envios;
+  const tot=E.length;
+  const real=E.filter(e=>e.estado==='Entregado').length;
+  const pend=E.filter(e=>e.estado==='Pendiente de enviar'||e.estado==='Enviado'||e.estado==='Material incompleto'||e.estado==='Incidencia').length;
+  const rows=invRows();
+  const outNames=new Set(rows.filter(r=>r.estado==='out').map(r=>r.nombre));
+  const paqFalta=E.filter(e=>e.estado==='Material incompleto'||(e.estado!=='Entregado'&&e.estado!=='Cancelado'&&e.mats.some(m=>outNames.has(m.nombre)))).length;
+  const gastoEnv=E.reduce((s,e)=>s+calcEnvio(e).total,0);
+  const gastoFalta=rows.reduce((s,r)=>s+r.faltan*r.precio,0);
+  const gastoGen=gastoEnv+gastoFalta;
+  const prom=tot?gastoEnv/tot:0;
+  const falta=faltantes().length;
+
+  $('#kTot').textContent=tot;
+  $('#kAluDelta').textContent=db.alumnos.length+' alumnos registrados';
+  $('#kPend').textContent=pend;
+  $('#kReal').textContent=real;
+  $('#kRealPct').textContent=(tot?Math.round(real/tot*100):0)+'% entregados';
+  $('#kPaqFalta').textContent=paqFalta;
+  $('#kGastoEnv').textContent=money(gastoEnv);
+  $('#kGastoFalta').textContent=money(gastoFalta);
+  $('#kGastoGen').textContent=money(gastoGen);
+  $('#kProm').textContent=money(prom);
+  $('#navFaltante').textContent=falta;
+  $('#navFaltante').style.display=falta?'grid':'none';
+
+  /* ---- Alumnos por curso ---- */
+  $('#chAluCurso').innerHTML=barChart(CURSOS.map((c,i)=>({
+    label:c.nombre,value:db.alumnos.filter(a=>a.curso===c.clave).length,color:PAL[i%PAL.length],always:true})));
+
+  /* ---- Cantidad de envíos por curso ---- */
+  $('#chEnvCurso').innerHTML=barChart(CURSOS.map((c,i)=>({
+    label:c.nombre,value:E.filter(e=>e.curso===c.clave).length,color:PAL[i%PAL.length]})));
+
+  /* ---- Gasto total por curso ---- */
+  $('#chGastoCurso').innerHTML=barChart(CURSOS.map((c,i)=>({
+    label:c.nombre,
+    value:E.filter(e=>e.curso===c.clave).reduce((s,e)=>s+calcEnvio(e).total,0),
+    color:PAL[i%PAL.length]})),short);
+
+  /* ---- Material vs Envío ---- */
+  let sMat=0,sEnv=0;
+  E.forEach(e=>{const t=calcEnvio(e);sMat+=t.cMat;sEnv+=t.envio;});
+  $('#chMatEnv').innerHTML=donut([
+    {label:'Costo de materiales',value:sMat,color:'#6366f1'},
+    {label:'Costo de envío',value:sEnv,color:'#06b6d4'}],'Gasto',short);
+
+  /* ---- Distribución por paquetería ---- */
+  const paqs=[...new Set(E.map(e=>e.paqueteria||'Sin definir'))];
+  $('#chPaqueteria').innerHTML=donut(paqs.map((m,i)=>({
+    label:m,value:E.filter(e=>(e.paqueteria||'Sin definir')===m).length,color:PAL[i%PAL.length]})),'Envíos');
+
+  /* ---- Envíos por estatus ---- */
+  $('#chEstatus').innerHTML=donut(ESTATUS_ENVIO.map(s=>({
+    label:s,value:E.filter(e=>e.estado===s).length,color:ESTATUS_COLOR[s]})),'Envíos');
+
+  /* ---- Recientes ---- */
+  $('#dashRecent').innerHTML=E.slice(0,6).map(e=>{
+    const t=calcEnvio(e);const a=alumnoDe(e.numero);
+    return `<tr><td class="mono">${e.folio}</td><td>${a?a.nombre.split(' ').slice(0,2).join(' '):e.numero}</td><td class="mono">${money(t.total)}</td><td>${pill(e.estado)}</td></tr>`;
+  }).join('')||`<tr><td colspan="4"><div class="chart-empty">Sin envíos</div></td></tr>`;
+}
+
+/* ============================================================ */
+/* 2. ALUMNOS                                                    */
+/* ============================================================ */
+const estatusPill=s=>{const m={Activo:'p-act',Inactivo:'p-ina',Egresado:'p-egr',Baja:'p-baja'};return `<span class="pill ${m[s]||'p-ina'}">${s||'—'}</span>`;};
+
+$('#aluForm').onsubmit=e=>{
+  e.preventDefault();
+  const data={
+    numero:$('#aluNum').value.trim(), nombre:$('#aluNombre').value.trim(),
+    ciudad:$('#aluCiudad').value.trim(), estado:$('#aluEstado').value.trim(),
+    tel:$('#aluTel').value.trim(), email:$('#aluEmail').value.trim(),
+    curso:$('#aluCurso').value, modalidad:$('#aluModalidad').value,
+    notas:$('#aluNotas').value.trim(), estatus:$('#aluEstatus').value};
+  const id=$('#aluEditId').value;
+  const dup=db.alumnos.find(a=>a.numero===data.numero && a.id!==id);
+  if(dup){toast('⚠ El número de alumno ya existe');return;}
+  if(id){
+    const prev=db.alumnos.find(a=>a.id===id);const oldNum=prev.numero;
+    Object.assign(prev,data);
+    if(oldNum!==data.numero) db.envios.forEach(e=>{if(e.numero===oldNum)e.numero=data.numero;}); // reasigna envíos
+    toast('✓ Alumno actualizado');
+  }else{
+    db.alumnos.push({id:uid(),...data});toast('✓ Alumno registrado');
+  }
+  persist();resetAlu();fillSelects();renderAlumnos();
+};
+function resetAlu(){$('#aluForm').reset();$('#aluEditId').value='';$('#aluFormTitle').textContent='Registrar alumno';$('#aluEstatus').value='Activo';}
+$('#aluCancel').onclick=resetAlu;
+
+function renderAlumnos(){
+  const q=($('#aluBuscar').value||'').toLowerCase();
+  const fCurso=$('#aluFCurso').value, fCiudad=$('#aluFCiudad').value, fEst=$('#aluFEstatus').value;
+  const rows=db.alumnos.filter(a=>{
+    const okQ=[a.nombre,a.numero].join(' ').toLowerCase().includes(q);
+    return okQ && (!fCurso||a.curso===fCurso) && (!fCiudad||a.ciudad===fCiudad) && (!fEst||a.estatus===fEst);
+  });
+  $('#aluBody').innerHTML=rows.map(a=>{
+    const n=db.envios.filter(e=>e.numero===a.numero).length;
+    return `<tr>
+      <td class="mono"><b>${a.numero||'—'}</b></td>
+      <td><b>${a.nombre}</b></td>
+      <td>${a.ciudad||'—'}<br><span class="hint">${a.estado||''}</span></td>
+      <td>${a.tel||'—'}<br><span class="hint">${a.email||''}</span></td>
+      <td>${cursoNombre(a.curso)}</td>
+      <td>${a.modalidad||'—'}</td>
+      <td>${estatusPill(a.estatus)}</td>
+      <td class="mono" style="text-align:center">${n}</td>
+      <td><div class="row-actions">
+        <button class="mini-btn" title="Historial de envíos" onclick="verHistorial('${a.id}')">👁</button>
+        <button class="mini-btn" title="Editar" onclick="editAlu('${a.id}')">✎</button>
+        <button class="mini-btn del" title="Eliminar" onclick="delAlu('${a.id}')">🗑</button>
+      </div></td></tr>`;
+  }).join('')||`<tr><td colspan="9"><div class="empty"><div class="big">🎓</div>Sin alumnos que coincidan</div></td></tr>`;
+}
+['aluBuscar','aluFCurso','aluFCiudad','aluFEstatus'].forEach(id=>$('#'+id).addEventListener('input',renderAlumnos));
+
+window.editAlu=id=>{const a=db.alumnos.find(x=>x.id===id);$('#aluEditId').value=id;$('#aluFormTitle').textContent='Editar alumno';
+  $('#aluNum').value=a.numero||'';$('#aluNombre').value=a.nombre||'';$('#aluCiudad').value=a.ciudad||'';$('#aluEstado').value=a.estado||'';
+  $('#aluTel').value=a.tel||'';$('#aluEmail').value=a.email||'';$('#aluCurso').value=a.curso;$('#aluModalidad').value=a.modalidad||'Estándar';
+  $('#aluEstatus').value=a.estatus||'Activo';$('#aluNotas').value=a.notas||'';window.scrollTo({top:0,behavior:'smooth'});};
+window.delAlu=id=>{const a=db.alumnos.find(x=>x.id===id);
+  if(db.envios.some(e=>e.numero===a.numero)){toast('⚠ Tiene envíos asociados; elimínalos primero');return;}
+  if(confirm(`¿Eliminar a ${a.nombre}?`)){db.alumnos=db.alumnos.filter(x=>x.id!==id);persist();fillSelects();renderAlumnos();toast('🗑 Alumno eliminado');}};
+
+/* ---- Historial de envíos por alumno (modal) ---- */
+let histNumActual=null;
+window.verHistorial=id=>{
+  const a=db.alumnos.find(x=>x.id===id); if(!a)return;
+  histNumActual=a.numero;
+  $('#histNombre').textContent=a.nombre;
+  $('#histSub').textContent='N.º de alumno: '+a.numero;
+  $('#histInfo').innerHTML=[
+    ['Ciudad',a.ciudad],['Estado',a.estado],['Teléfono',a.tel],['Correo',a.email],
+    ['Curso',cursoNombre(a.curso)],['Modalidad',a.modalidad],['Estatus',a.estatus],['Notas',a.notas||'—']
+  ].map(([k,v])=>`<div class="info-item"><div class="k">${k}</div><div class="v">${v||'—'}</div></div>`).join('');
+  const envs=db.envios.filter(e=>e.numero===a.numero);
+  $('#histBody').innerHTML=envs.map(e=>{const t=calcEnvio(e);
+    return `<tr><td class="mono">${e.folio}</td><td>${cursoNombre(e.curso)}</td><td>${e.tipoServicio||e.paqueteria||'—'}</td>
+      <td class="mono">${money(t.cMat)}</td><td class="mono">${money(t.imp)}</td><td class="mono"><b>${money(t.total)}</b></td><td>${pill(e.estado)}</td></tr>`;
+  }).join('')||`<tr><td colspan="7"><div class="empty"><div class="big">📭</div>Este alumno no tiene envíos registrados</div></td></tr>`;
+  $('#histModal').classList.add('open');
+};
+$('#histClose').onclick=()=>$('#histModal').classList.remove('open');
+$('#histModal').onclick=e=>{if(e.target===$('#histModal'))$('#histModal').classList.remove('open');};
+$('#histNuevo').onclick=()=>{$('#histModal').classList.remove('open');show('envios');openForm();if(histNumActual)$('#alumno').value=histNumActual;$('#curso').dispatchEvent(new Event('change'));calc();};
+
+/* ============================================================ */
+/* 3. CURSOS                                                     */
+/* ============================================================ */
+function renderCursos(){
+  $('#cursosBody').innerHTML=CURSOS.map(c=>{
+    const total=c.mats.reduce((s,m)=>s+m.cant*m.precio,0)+c.base;
+    const nAlu=db.alumnos.filter(a=>a.curso===c.clave).length;
+    return `<tr><td><b>${c.nombre}</b></td><td class="mono">${c.clave}</td>
+      <td>${c.mats.map(m=>`${m.nombre} <span class="hint">(${m.cant}×${money(m.precio)})</span>`).join('<br>')}</td>
+      <td class="mono">${nAlu}</td><td class="mono"><b>${money(total)}</b></td></tr>`;
+  }).join('');
+}
+
+/* ============================================================ */
+/* 4. ENVÍOS                                                     */
+/* ============================================================ */
+function showList(){$('#envioListWrap').classList.remove('hidden');$('#envioFormWrap').classList.add('hidden');}
+function showForm(){$('#envioListWrap').classList.add('hidden');$('#envioFormWrap').classList.remove('hidden');}
+$('#newEnvioBtn').onclick=()=>openForm();
+$('#backToList').onclick=()=>{showList();renderEnvios();};
+
+function matRow(m={nombre:'',cant:1,precio:0}){
+  const row=document.createElement('div');row.className='mat-row';
+  row.innerHTML=`<div class="field"><input class="m-nombre" placeholder="Material" value="${m.nombre.replace(/"/g,'&quot;')}"></div>
+    <div class="field"><input class="m-cant" type="number" min="1" value="${m.cant}"></div>
+    <div class="field"><input class="m-precio" type="number" min="0" step="0.01" value="${m.precio}"></div>
+    <button type="button" class="mat-del">✕</button>`;
+  row.querySelector('.mat-del').onclick=()=>{row.remove();calc();};
+  row.querySelectorAll('input').forEach(i=>i.addEventListener('input',calc));
+  return row;
+}
+function addMat(m){$('#matBox').appendChild(matRow(m));calc();}
+$('#addMat').onclick=()=>addMat();
+$('#curso').onchange=()=>{if($('#editId').value)return;const c=CURSOS.find(x=>x.clave===$('#curso').value);$('#matBox').innerHTML='';c.mats.forEach(m=>addMat({...m}));};
+$('#tipoServicio').onchange=()=>{$('#costoBaseEnvio').value=db.cfg.envio[$('#tipoServicio').value]??+$('#costoBaseEnvio').value??0;calc();};
+/* al elegir alumno, autocompletar sus datos */
+$('#alumno').onchange=()=>{if($('#editId').value)return;const a=alumnoDe($('#alumno').value);if(!a)return;
+  $('#evCiudad').value=a.ciudad||'';$('#evEstado').value=a.estado||'';$('#evTel').value=a.tel||'';
+  $('#curso').value=a.curso;$('#tipoServicio').value=a.modalidad||'Estándar';
+  $('#costoBaseEnvio').value=db.cfg.envio[$('#tipoServicio').value]??0;
+  const c=CURSOS.find(x=>x.clave===a.curso)||CURSOS[0];$('#matBox').innerHTML='';c.mats.forEach(m=>addMat({...m}));calc();};
+['tasaImp','costoEmpaque','costoBaseEnvio','costoZonaExt','zonaExtendida'].forEach(id=>$('#'+id).addEventListener('input',calc));
+$('#zonaExtendida').addEventListener('change',calc);
+
+function readMats(){return[...document.querySelectorAll('#matBox .mat-row')].map(r=>({
+  nombre:r.querySelector('.m-nombre').value.trim(),cant:+r.querySelector('.m-cant').value||0,precio:+r.querySelector('.m-precio').value||0}));}
+function formEnvioObj(){return {
+  mats:readMats(),tasa:+$('#tasaImp').value||0,
+  costoEmpaque:+$('#costoEmpaque').value||0,costoBaseEnvio:+$('#costoBaseEnvio').value||0,
+  zonaExtendida:$('#zonaExtendida').value,costoZonaExt:+$('#costoZonaExt').value||0};}
+function calc(){
+  const t=calcEnvio(formEnvioObj());
+  $('#cMat').textContent=money(t.cMat);$('#cEmp').textContent=money(t.cEmp);
+  $('#cBase').textContent=money(t.cBase);$('#cZona').textContent=money(t.cZona);
+  $('#cSub').textContent=money(t.sub);$('#cImp').textContent=money(t.imp);
+  $('#cTasa').textContent=+$('#tasaImp').value||0;$('#cTotal').textContent=money(t.total);
+  $('#costoMatHint').textContent='Costo del material: '+money(t.cMat);
+}
+function setF(id,v){$('#'+id).value=v==null?'':v;}
+function openForm(edit){
+  showForm();$('#envioForm').reset();
+  if(edit){
+    const e=edit;$('#editId').value=e.id;$('#formTitle').textContent='Editar envío · '+e.folio;
+    setF('alumno',e.numero);setF('curso',e.curso);setF('evCiudad',e.ciudad);setF('evEstado',e.estado_geo);
+    setF('evTel',e.tel);setF('evCP',e.cp);setF('direccion',e.direccion);
+    setF('tipoEmpaque',e.tipoEmpaque);setF('costoEmpaque',e.costoEmpaque);setF('peso',e.peso);setF('medidas',e.medidas);
+    setF('materialesFaltantes',e.materialesFaltantes);
+    setF('paqueteria',e.paqueteria);setF('tipoServicio',e.tipoServicio);setF('zonaExtendida',e.zonaExtendida);
+    setF('costoZonaExt',e.costoZonaExt);setF('costoBaseEnvio',e.costoBaseEnvio);setF('guia',e.guia);
+    setF('fechaEnvio',e.fechaEnvio);setF('fechaEstimada',e.fechaEstimada);setF('fechaReal',e.fechaReal);
+    setF('tasaImp',e.tasa);setF('estado',e.estado);setF('notas',e.notas);
+    $('#matBox').innerHTML='';e.mats.forEach(m=>addMat({...m}));
+  }else{
+    $('#editId').value='';$('#formTitle').textContent='Registrar nuevo envío';
+    setF('tasaImp',db.cfg.tasa);setF('tipoEmpaque','Caja');setF('costoEmpaque',35);setF('zonaExtendida','no');setF('costoZonaExt',0);
+    setF('estado','Pendiente de enviar');
+    const a=db.alumnos[0];
+    if(a){setF('alumno',a.numero);setF('curso',a.curso);setF('evCiudad',a.ciudad);setF('evEstado',a.estado);setF('evTel',a.tel);setF('tipoServicio',a.modalidad||'Estándar');}
+    else{$('#curso').selectedIndex=0;setF('tipoServicio','Estándar');}
+    setF('costoBaseEnvio',db.cfg.envio[$('#tipoServicio').value]??90);
+    const c=CURSOS.find(x=>x.clave===$('#curso').value)||CURSOS[0];$('#matBox').innerHTML='';c.mats.forEach(m=>addMat({...m}));
+  }
+  calc();window.scrollTo({top:0,behavior:'smooth'});
+}
+$('#cancelEdit').onclick=()=>openForm();
+$('#envioForm').onsubmit=e=>{
+  e.preventDefault();
+  const mats=readMats().filter(m=>m.nombre);
+  if(!mats.length){toast('⚠ Agrega al menos un material');return;}
+  if(!db.alumnos.length){toast('⚠ Registra un alumno primero');return;}
+  const data={
+    numero:$('#alumno').value,curso:$('#curso').value,
+    ciudad:$('#evCiudad').value.trim(),estado_geo:$('#evEstado').value.trim(),
+    tel:$('#evTel').value.trim(),cp:$('#evCP').value.trim(),direccion:$('#direccion').value.trim(),
+    tipoEmpaque:$('#tipoEmpaque').value,costoEmpaque:+$('#costoEmpaque').value||0,
+    peso:+$('#peso').value||0,medidas:$('#medidas').value.trim(),materialesFaltantes:$('#materialesFaltantes').value.trim(),
+    paqueteria:$('#paqueteria').value,tipoServicio:$('#tipoServicio').value,
+    zonaExtendida:$('#zonaExtendida').value,costoZonaExt:+$('#costoZonaExt').value||0,costoBaseEnvio:+$('#costoBaseEnvio').value||0,
+    guia:$('#guia').value.trim(),fechaEnvio:$('#fechaEnvio').value,fechaEstimada:$('#fechaEstimada').value,fechaReal:$('#fechaReal').value,
+    tasa:+$('#tasaImp').value||0,estado:$('#estado').value,notas:$('#notas').value.trim(),mats};
+  const id=$('#editId').value;
+  if(id){const i=db.envios.findIndex(x=>x.id===id);db.envios[i]={...db.envios[i],...data};toast('✓ Envío actualizado');}
+  else{db.envios.unshift({id:uid(),folio:folio(),...data});toast('✓ Envío registrado');}
+  persist();showList();renderEnvios();
+};
+const ESTATUS_ENVIO=['Pendiente de enviar','Enviado','Entregado','Incidencia','Cancelado','Material incompleto'];
+const ESTATUS_CLASS={'Pendiente de enviar':'p-pend','Enviado':'p-enviado','Entregado':'p-entregado','Incidencia':'p-incidencia','Cancelado':'p-cancelado','Material incompleto':'p-incompleto'};
+const ESTATUS_COLOR={'Pendiente de enviar':'#f59e0b','Enviado':'#3b82f6','Entregado':'#10b981','Incidencia':'#ef4444','Cancelado':'#64748b','Material incompleto':'#ea580c'};
+function pill(est){return `<span class="pill ${ESTATUS_CLASS[est]||'p-cancelado'}">${est||'—'}</span>`;}
+function renderEnvios(){
+  const q=($('#buscar').value||'').toLowerCase(),fe=$('#filtroEstado').value,fc=$('#filtroCurso').value;
+  const rows=db.envios.filter(e=>{const a=alumnoDe(e.numero);
+    const okQ=[a?a.nombre:'',e.numero,e.folio,e.guia||''].join(' ').toLowerCase().includes(q);
+    return okQ&&(!fe||e.estado===fe)&&(!fc||e.curso===fc);});
+  $('#tbody').innerHTML=rows.map(e=>{const t=calcEnvio(e);const a=alumnoDe(e.numero);
+    return `<tr><td class="mono">${e.folio}</td>
+      <td><b>${a?a.nombre:e.numero}</b><br><span class="hint">${e.numero}</span></td>
+      <td>${cursoNombre(e.curso)}<br><span class="hint">${e.curso}</span></td>
+      <td>${e.tipoEmpaque||'—'}<br><span class="hint">${money(t.cEmp)}</span></td>
+      <td>${e.tipoServicio||'—'}<br><span class="hint">${e.guia?('Guía '+e.guia):(e.paqueteria||'')}</span></td>
+      <td class="mono">${money(t.cMat)}</td><td class="mono">${money(t.imp)}</td>
+      <td class="mono"><b>${money(t.total)}</b></td><td>${pill(e.estado)}</td>
+      <td><div class="row-actions"><button class="mini-btn" onclick="editEnvio('${e.id}')">✎</button><button class="mini-btn del" onclick="delEnvio('${e.id}')">🗑</button></div></td></tr>`;
+  }).join('')||`<tr><td colspan="10"><div class="empty"><div class="big">📭</div>No hay envíos que coincidan</div></td></tr>`;
+}
+['buscar','filtroEstado','filtroCurso'].forEach(id=>$('#'+id).addEventListener('input',renderEnvios));
+window.editEnvio=id=>openForm(db.envios.find(x=>x.id===id));
+window.delEnvio=id=>{const e=db.envios.find(x=>x.id===id);if(confirm(`¿Eliminar el envío ${e.folio}?`)){db.envios=db.envios.filter(x=>x.id!==id);persist();renderEnvios();toast('🗑 Envío eliminado');}};
+$('#exportBtn').onclick=()=>{
+  const head=['Folio','Alumno','IdAlumno','Curso','Empaque','Paqueteria','Servicio','Guia','FechaEnvio','FechaEstimada','FechaReal','Materiales','Empaque$','Envio$','Subtotal','Impuesto','Total','Estatus'];
+  const lines=db.envios.map(e=>{const t=calcEnvio(e);const a=alumnoDe(e.numero);
+    return [e.folio,a?a.nombre:'',e.numero,e.curso,e.tipoEmpaque,e.paqueteria,e.tipoServicio,e.guia,e.fechaEnvio,e.fechaEstimada,e.fechaReal,
+      t.cMat.toFixed(2),t.cEmp.toFixed(2),t.cEnvio.toFixed(2),t.sub.toFixed(2),t.imp.toFixed(2),t.total.toFixed(2),e.estado].map(x=>`"${x??''}"`).join(',');});
+  dl('envios_ccrgm.csv','﻿'+[head.join(','),...lines].join('\n'),'text/csv');toast('⭳ CSV exportado');
+};
+
+/* ============================================================ */
+/* 5. COSTOS DE MATERIALES                                       */
+/* ============================================================ */
+function aggMateriales(){
+  const map={};
+  db.envios.forEach(e=>e.mats.forEach(m=>{
+    if(!map[m.nombre])map[m.nombre]={u:0,imp:0,cost:0};
+    map[m.nombre].u+=m.cant;map[m.nombre].cost+=m.cant*m.precio;map[m.nombre].imp+=m.cant*m.precio;
+  }));
+  return map;
+}
+function renderCostos(){
+  let tMat=0,tEnv=0,tImp=0,tTot=0;
+  db.envios.forEach(e=>{const t=calcEnvio(e);tMat+=t.cMat;tEnv+=t.envio;tImp+=t.imp;tTot+=t.total;});
+  $('#coMat').textContent=money(tMat);$('#coEnv').textContent=money(tEnv);$('#coImp').textContent=money(tImp);$('#coTot').textContent=money(tTot);
+  const map=aggMateriales();const totalMat=Object.values(map).reduce((s,v)=>s+v.cost,0)||1;
+  $('#costosBody').innerHTML=Object.entries(map).sort((a,b)=>b[1].cost-a[1].cost).map(([n,v])=>{
+    const pct=v.cost/totalMat*100;
+    return `<tr><td><b>${n}</b></td><td class="mono">${v.u}</td><td class="mono">${money(v.cost/v.u)}</td>
+      <td class="mono">${money(v.cost)}</td><td><div style="display:flex;align-items:center;gap:8px"><div class="bar"><span style="width:${pct}%;background:linear-gradient(90deg,var(--brand),var(--brand-2))"></span></div><span class="hint">${pct.toFixed(1)}%</span></div></td></tr>`;
+  }).join('')||`<tr><td colspan="5"><div class="empty">Sin materiales</div></td></tr>`;
+  $('#costosFoot').innerHTML=`<tr><td>Total materiales</td><td></td><td></td><td class="mono">${money(totalMat)}</td><td>100%</td></tr>`;
+  // por curso
+  const cm={};
+  db.envios.forEach(e=>{const t=calcEnvio(e);
+    if(!cm[e.curso])cm[e.curso]={n:0,mat:0,env:0,imp:0,tot:0};
+    cm[e.curso].n++;cm[e.curso].mat+=t.cMat;cm[e.curso].env+=t.envio;cm[e.curso].imp+=t.imp;cm[e.curso].tot+=t.total;});
+  $('#costosCursoBody').innerHTML=Object.entries(cm).map(([c,v])=>
+    `<tr><td><b>${cursoNombre(c)}</b></td><td class="mono">${v.n}</td><td class="mono">${money(v.mat)}</td><td class="mono">${money(v.env)}</td><td class="mono">${money(v.imp)}</td><td class="mono"><b>${money(v.tot)}</b></td></tr>`
+  ).join('')||`<tr><td colspan="6"><div class="empty">Sin datos</div></td></tr>`;
+}
+
+/* ============================================================ */
+/* 6. MATERIAL FALTANTE                                          */
+/* ============================================================ */
+function demanda(){
+  const d={};
+  db.envios.filter(e=>e.estado!=='Entregado'&&e.estado!=='Cancelado').forEach(e=>e.mats.forEach(m=>{d[m.nombre]=(d[m.nombre]||0)+m.cant;}));
+  return d;
+}
+function invRows(){
+  const dem=demanda();
+  // asegurar que materiales usados existan en inventario
+  db.envios.forEach(e=>e.mats.forEach(m=>{if(!db.inventario[m.nombre])db.inventario[m.nombre]={stock:0,minimo:3,precio:m.precio};}));
+  return Object.entries(db.inventario).map(([nombre,v])=>{
+    const d=dem[nombre]||0;const faltan=Math.max(0,d-v.stock);
+    let estado='ok';
+    if(v.stock<d) estado='out';
+    else if(v.stock<=v.minimo) estado='low';
+    return {nombre,stock:v.stock,minimo:v.minimo,precio:v.precio,demanda:d,faltan,estado};
+  });
+}
+function faltantes(){return invRows().filter(r=>r.estado==='out');}
+function renderInv(){
+  const q=($('#invBuscar').value||'').toLowerCase(),f=$('#invFiltro').value;
+  let rows=invRows().filter(r=>r.nombre.toLowerCase().includes(q));
+  if(f)rows=rows.filter(r=>r.estado===f);
+  rows.sort((a,b)=>({out:0,low:1,ok:2}[a.estado])-({out:0,low:1,ok:2}[b.estado]));
+  const badge={out:'<span class="pill p-out">Faltante</span>',low:'<span class="pill p-low">Stock bajo</span>',ok:'<span class="pill p-ok">Disponible</span>'};
+  $('#invBody').innerHTML=rows.map(r=>{
+    const pct=r.demanda?Math.min(100,r.stock/Math.max(r.demanda,1)*100):100;
+    const col=r.estado==='out'?'var(--bad)':r.estado==='low'?'var(--warn)':'var(--good)';
+    return `<tr><td><b>${r.nombre}</b></td><td class="mono">${r.stock}</td><td class="mono">${r.demanda}</td><td class="mono">${r.minimo}</td>
+      <td><div class="bar" style="width:110px"><span style="width:${pct}%;background:${col}"></span></div></td>
+      <td class="mono" style="color:${r.faltan?'var(--bad)':'inherit'}">${r.faltan||'—'}</td><td>${badge[r.estado]}</td>
+      <td><button class="mini-btn" onclick="editStock('${r.nombre.replace(/'/g,"\\'")}')">✎</button></td></tr>`;
+  }).join('')||`<tr><td colspan="8"><div class="empty"><div class="big">✅</div>Sin coincidencias</div></td></tr>`;
+  $('#navFaltante').textContent=faltantes().length;
+  $('#navFaltante').style.display=faltantes().length?'grid':'none';
+}
+['invBuscar','invFiltro'].forEach(id=>$('#'+id).addEventListener('input',renderInv));
+window.editStock=nombre=>{
+  const v=db.inventario[nombre];
+  const s=prompt(`Stock disponible de "${nombre}":`,v.stock);if(s===null)return;
+  const mn=prompt(`Stock mínimo de "${nombre}":`,v.minimo);if(mn===null)return;
+  v.stock=Math.max(0,+s||0);v.minimo=Math.max(0,+mn||0);persist();renderInv();renderDashboard();toast('✓ Inventario actualizado');
+};
+
+/* ============================================================ */
+/* 7. REPORTES (PDF vía impresión)                               */
+/* ============================================================ */
+function reportHeader(titulo){
+  return `<div class="print-head"><div><h1>CCRGM</h1><div style="font-size:12px">${titulo}</div></div>
+    <div class="meta">Centro de Control de Recursos<br>y Gestión de Materiales<br>Generado: 14/07/2026</div></div>`;
+}
+function buildReport(tipo){
+  let html='';
+  if(tipo==='envios'){
+    let tot=0;
+    const rows=db.envios.map(e=>{const t=calcEnvio(e);tot+=t.total;const a=alumnoDe(e.numero);
+      return `<tr><td>${e.folio}</td><td>${a?a.nombre:e.numero}</td><td>${cursoNombre(e.curso)}</td><td>${e.paqueteria||'—'}</td><td>${e.tipoServicio||'—'}</td>
+        <td>${money(t.cMat)}</td><td>${money(t.envio)}</td><td>${money(t.imp)}</td><td>${money(t.total)}</td><td>${e.estado}</td></tr>`;}).join('');
+    html=reportHeader('Reporte de Envíos de Materiales Didácticos')+
+      `<table><thead><tr><th>Folio</th><th>Alumno</th><th>Curso</th><th>Paquetería</th><th>Servicio</th><th>Materiales</th><th>Envío</th><th>Impuesto</th><th>Total</th><th>Estatus</th></tr></thead>
+       <tbody>${rows}</tbody><tfoot><tr><td colspan="8"><b>TOTAL GENERAL</b></td><td colspan="2"><b>${money(tot)}</b></td></tr></tfoot></table>`;
+  }
+  if(tipo==='costos'){
+    const map=aggMateriales();const totalMat=Object.values(map).reduce((s,v)=>s+v.cost,0);
+    let tImp=0,tEnv=0,tTot=0;db.envios.forEach(e=>{const t=calcEnvio(e);tImp+=t.imp;tEnv+=t.envio;tTot+=t.total;});
+    const rows=Object.entries(map).sort((a,b)=>b[1].cost-a[1].cost).map(([n,v])=>`<tr><td>${n}</td><td>${v.u}</td><td>${money(v.cost/v.u)}</td><td>${money(v.cost)}</td></tr>`).join('');
+    html=reportHeader('Reporte de Costos de Materiales')+
+      `<table><thead><tr><th>Material</th><th>Unidades</th><th>Precio unit.</th><th>Costo total</th></tr></thead><tbody>${rows}</tbody></table>
+       <table style="margin-top:16px"><tbody>
+       <tr><td>Total materiales</td><td>${money(totalMat)}</td></tr>
+       <tr><td>Total envíos</td><td>${money(tEnv)}</td></tr>
+       <tr><td>Total impuestos</td><td>${money(tImp)}</td></tr>
+       <tr><td><b>TOTAL GENERAL</b></td><td><b>${money(tTot)}</b></td></tr></tbody></table>`;
+  }
+  if(tipo==='faltante'){
+    const rows=invRows().sort((a,b)=>({out:0,low:1,ok:2}[a.estado])-({out:0,low:1,ok:2}[b.estado]))
+      .map(r=>`<tr><td>${r.nombre}</td><td>${r.stock}</td><td>${r.demanda}</td><td>${r.minimo}</td><td>${r.faltan||'—'}</td><td>${({out:'FALTANTE',low:'Stock bajo',ok:'Disponible'})[r.estado]}</td></tr>`).join('');
+    html=reportHeader('Reporte de Material Faltante e Inventario')+
+      `<table><thead><tr><th>Material</th><th>Stock</th><th>Demanda</th><th>Mínimo</th><th>Faltan</th><th>Estado</th></tr></thead><tbody>${rows}</tbody></table>`;
+  }
+  if(tipo==='alumnos'){
+    const rows=db.alumnos.map(a=>{const n=db.envios.filter(e=>e.numero===a.numero).length;
+      return `<tr><td>${a.numero}</td><td>${a.nombre}</td><td>${a.ciudad||'—'}, ${a.estado||''}</td><td>${cursoNombre(a.curso)}</td><td>${a.email||'—'}</td><td>${a.tel||'—'}</td><td>${a.estatus||'—'}</td><td>${n}</td></tr>`;}).join('');
+    html=reportHeader('Directorio de Alumnos')+
+      `<table><thead><tr><th>N.º alumno</th><th>Nombre</th><th>Ubicación</th><th>Curso</th><th>Correo</th><th>Teléfono</th><th>Estatus</th><th>Envíos</th></tr></thead><tbody>${rows}</tbody></table>`;
+  }
+  return html;
+}
+function printReport(tipo){
+  $('#printArea').innerHTML=buildReport(tipo);
+  toast('🖨 Abriendo diálogo de impresión…');
+  setTimeout(()=>window.print(),250);
+}
+document.querySelectorAll('[data-report]').forEach(el=>el.onclick=()=>printReport(el.dataset.report));
+
+/* ============================================================ */
+/* 8. CONFIGURACIÓN                                              */
+/* ============================================================ */
+function loadCfgForm(){
+  $('#cfgTasa').value=db.cfg.tasa;$('#cfgMoneda').value=db.cfg.moneda;
+  $('#cfgEstandar').value=db.cfg.envio['Estándar'];$('#cfgExpress').value=db.cfg.envio['Express'];
+  $('#cfgDigital').value=db.cfg.envio['Digital'];$('#cfgLocal').value=db.cfg.envio['Local'];
+}
+$('#cfgSave').onclick=()=>{
+  db.cfg.tasa=+$('#cfgTasa').value||0;db.cfg.moneda=$('#cfgMoneda').value;
+  db.cfg.envio={'Estándar':+$('#cfgEstandar').value||0,'Express':+$('#cfgExpress').value||0,'Digital':+$('#cfgDigital').value||0,'Local':+$('#cfgLocal').value||0};
+  persist();toast('✓ Configuración guardada');renderDashboard();
+};
+$('#cfgTheme').onclick=toggleTheme;
+$('#cfgExport').onclick=()=>{dl('respaldo_ccrgm.json',JSON.stringify(db,null,2),'application/json');toast('⭳ Respaldo exportado');};
+$('#cfgImport').onchange=ev=>{const f=ev.target.files[0];if(!f)return;const r=new FileReader();
+  r.onload=()=>{try{db=JSON.parse(r.result);persist();fillSelects();show('dashboard');toast('✓ Respaldo importado');}catch{toast('⚠ Archivo inválido');}};r.readAsText(f);};
+$('#cfgSeed').onclick=()=>{if(confirm('¿Restablecer los datos de ejemplo? Se perderán los cambios actuales.')){db=seed();persist();fillSelects();show('dashboard');toast('↺ Datos restablecidos');}};
+$('#cfgWipe').onclick=()=>{if(confirm('¿Borrar TODOS los datos? Esta acción no se puede deshacer.')){db={cfg:JSON.parse(JSON.stringify(DEFAULT_CFG)),alumnos:[],envios:[],inventario:{}};persist();fillSelects();show('dashboard');toast('🗑 Datos borrados');}};
+
+/* ==================== UTILIDADES ==================== */
+function dl(name,content,type){const b=new Blob([content],{type:type+';charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;a.click();}
+let toastT;function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2600);}
+
+/* ==================== INIT ==================== */
+fillSelects();
+show('dashboard');
+</script>
+</body>
+</html>
