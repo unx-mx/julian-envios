@@ -228,9 +228,42 @@ tbody tr.dup.sel td{background:rgba(239,68,68,.18)}
 tbody tr.prev-dup td{background:rgba(239,68,68,.10)}
 .dup-badge{display:inline-block;margin-top:5px;font-size:9.5px;font-weight:800;color:#fff;background:var(--bad);
   padding:2px 8px;border-radius:999px;letter-spacing:.4px;text-transform:uppercase;white-space:nowrap}
-/* tareas vencidas: fila roja */
-tbody tr.venc td{background:rgba(239,68,68,.10)}
+/* tareas: color de fila según fecha límite y estatus */
+tbody tr.venc td{background:rgba(239,68,68,.10)}          /* vencida */
 tbody tr.venc.sel td{background:rgba(239,68,68,.18)}
+tbody tr.tk-prox td{background:rgba(245,158,11,.13)}      /* vence próximamente */
+tbody tr.tk-prox.sel td{background:rgba(245,158,11,.21)}
+tbody tr.tk-done td{background:rgba(16,185,129,.11)}      /* completada */
+tbody tr.tk-done.sel td{background:rgba(16,185,129,.19)}
+tbody tr.tk-plan td{background:rgba(59,130,246,.09)}      /* pendiente dentro del plazo */
+tbody tr.tk-plan.sel td{background:rgba(59,130,246,.17)}
+.tk-chip{display:inline-block;margin-left:6px;font-size:9.5px;font-weight:800;color:#fff;
+  padding:2px 8px;border-radius:999px;letter-spacing:.4px;text-transform:uppercase;white-space:nowrap;vertical-align:middle}
+.tk-chip.bad{background:var(--bad)}
+.tk-chip.warn{background:var(--warn)}
+.tk-chip.good{background:var(--good)}
+.tk-fecha{display:inline-flex;align-items:center;gap:6px}
+.tk-serie{font-size:10px;font-weight:700;color:var(--text-faint);margin-top:3px}
+/* mini calendario desplegable para reprogramar la fecha límite */
+.cal-pop{position:fixed;z-index:120;width:272px;background:var(--surface-solid);border:1px solid var(--border);
+  border-radius:var(--radius-sm);box-shadow:var(--shadow);padding:12px;display:none}
+.cal-pop.open{display:block}
+.cal-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.cal-title{font-weight:800;font-size:13px;text-transform:capitalize}
+.cal-nav{border:1px solid var(--border);background:transparent;color:var(--text);border-radius:8px;
+  width:26px;height:26px;cursor:pointer;font-size:14px;line-height:1;flex:none}
+.cal-nav:hover{background:rgba(99,102,241,.12)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.cal-dow{font-size:9.5px;font-weight:800;color:var(--text-faint);text-align:center;padding:4px 0;text-transform:uppercase}
+.cal-day{border:0;background:transparent;color:var(--text);border-radius:8px;padding:6px 0;font-size:12.5px;
+  cursor:pointer;font-weight:600;font-family:inherit}
+.cal-day:hover{background:rgba(99,102,241,.14)}
+.cal-day.out{color:var(--text-faint);opacity:.45}
+.cal-day.hoy{box-shadow:inset 0 0 0 1px var(--brand)}
+.cal-day.pick{background:var(--brand);color:#fff}
+.cal-sel{margin-top:10px;font-size:11.5px;color:var(--text-soft)}
+.cal-sel b{color:var(--text)}
+.cal-acts{display:flex;gap:6px;justify-content:flex-end;margin-top:10px}
 /* selector de estatus de tarea con color por estado */
 .tk-sel{width:auto;min-width:160px;font-weight:700;font-size:12.5px;border-radius:9px;padding:8px 10px;cursor:pointer}
 .tk-sel.ok{color:#059669;background:rgba(16,185,129,.12);border-color:rgba(16,185,129,.45)}
@@ -1246,12 +1279,34 @@ th.num,td.num{text-align:right}
         <div class="field full"><label>Nombre de la tarea *</label><input id="tkfNombre" placeholder="Ej. Confirmar guías con la paquetería"></div>
         <div class="field"><label>Fecha límite</label><input id="tkfFecha" placeholder="DD/MM/AAAA" inputmode="numeric"></div>
         <div class="field"><label>Estatus</label><select id="tkfEstatus"></select></div>
+        <div class="field"><label>Repetición</label><select id="tkfRepite"></select></div>
+        <div class="field hidden" id="tkfRepsWrap"><label>N.º de repeticiones</label><input id="tkfReps" type="number" min="2" max="60" value="6"></div>
+        <div class="field full hidden" id="tkfRepNota" style="font-size:11.5px;color:var(--text-soft)"></div>
       </div>
       <div class="form-actions" style="justify-content:flex-end;gap:8px;margin-top:6px">
         <button type="button" class="btn btn-ghost" id="tkCancel">Cancelar</button>
         <button type="submit" class="btn btn-primary">💾 Guardar tarea</button>
       </div>
     </form>
+  </div>
+</div>
+
+<!-- ====== MODAL: ALCANCE DEL CAMBIO EN UNA SERIE REPETITIVA ====== -->
+<div class="modal-bg" id="tkSerieModal">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-head">
+      <div><h2>Tarea repetitiva</h2><div class="sub" id="tkSerieSub"></div></div>
+      <button class="icon-btn" id="tkSerieClose">✕</button>
+    </div>
+    <p id="tkSerieBody" style="line-height:1.6;margin:0;color:var(--text-soft)"></p>
+    <div style="display:grid;gap:8px;margin-top:14px">
+      <button type="button" class="btn btn-ghost" data-scope="una" style="justify-content:flex-start">Modificar únicamente esta tarea</button>
+      <button type="button" class="btn btn-ghost" data-scope="siguientes" style="justify-content:flex-start">Modificar esta tarea y las siguientes</button>
+      <button type="button" class="btn btn-ghost" data-scope="todas" style="justify-content:flex-start">Modificar todas las tareas de la serie</button>
+    </div>
+    <div class="form-actions" style="justify-content:flex-end;margin-top:16px">
+      <button type="button" class="btn btn-ghost" id="tkSerieCancel">Cancelar</button>
+    </div>
   </div>
 </div>
 
@@ -3532,23 +3587,62 @@ $('#rcImpErrReport').onclick=()=>{
 /* ---- Tareas ---- */
 const TAREA_ESTATUS=['Tarea pendiente','Tarea en proceso','Tarea realizada'];
 const TAREA_SEL_CLASS={'Tarea realizada':'ok','Tarea en proceso':'proc','Tarea pendiente':'pend'};
+const TAREA_REPITE=[['','No se repite'],['diaria','Diaria'],['semanal','Semanal'],['quincenal','Quincenal'],['mensual','Mensual']];
+const TAREA_REPITE_TXT=Object.fromEntries(TAREA_REPITE);
+const TAREA_DIAS_PROX=3;   // margen en días para marcar una tarea como "vence próximamente"
 /* normaliza una tarea (migra el formato antiguo: estado→estatus, fecha texto→fechaISO) */
 function normTarea(t){
   if(!TAREA_ESTATUS.includes(t.estatus)) t.estatus = (t.estado==='Hecha')?'Tarea realizada':'Tarea pendiente';
   if(t.fechaISO===undefined) t.fechaISO = parseFechaDMY(t.fecha||'')||'';
+  if(t.serieId===undefined) t.serieId='';        // '' = tarea de una sola vez
+  if(t.repite===undefined)  t.repite='';         // '' | diaria | semanal | quincenal | mensual
   return t;
+}
+/* ---- aritmética de fechas en UTC (evita corrimientos por horario de verano) ---- */
+function isoADate(iso){const[y,m,d]=String(iso).split('-').map(Number);return new Date(Date.UTC(y,m-1,d));}
+function dateAISO(dt){const p=n=>String(n).padStart(2,'0');
+  return dt.getUTCFullYear()+'-'+p(dt.getUTCMonth()+1)+'-'+p(dt.getUTCDate());}
+function addDiasISO(iso,n){const dt=isoADate(iso);dt.setUTCDate(dt.getUTCDate()+n);return dateAISO(dt);}
+function addMesesISO(iso,n){const dt=isoADate(iso),dia=dt.getUTCDate();
+  dt.setUTCDate(1);dt.setUTCMonth(dt.getUTCMonth()+n);
+  const ult=new Date(Date.UTC(dt.getUTCFullYear(),dt.getUTCMonth()+1,0)).getUTCDate();
+  dt.setUTCDate(Math.min(dia,ult));return dateAISO(dt);}     // 31/01 + 1 mes → 28/02
+function diffDiasISO(a,b){return Math.round((isoADate(b)-isoADate(a))/86400000);}
+function sigFechaISO(iso,repite){
+  if(repite==='diaria')    return addDiasISO(iso,1);
+  if(repite==='semanal')   return addDiasISO(iso,7);
+  if(repite==='quincenal') return addDiasISO(iso,15);
+  if(repite==='mensual')   return addMesesISO(iso,1);
+  return iso;
+}
+/* tareas de la misma serie, ordenadas por fecha límite */
+function serieDe(t){
+  if(!t.serieId)return[t];
+  return (db.tareas||[]).filter(x=>x.serieId===t.serieId)
+    .sort((a,b)=>String(a.fechaISO||'9999').localeCompare(String(b.fechaISO||'9999')));
+}
+/* color de la fila: verde completada · rojo vencida · amarillo por vencer · azul en plazo */
+function estadoTarea(t){
+  if(t.estatus==='Tarea realizada') return{cls:'tk-done',chip:'Completada',chipCls:'good'};
+  if(!t.fechaISO)                   return{cls:'tk-plan',chip:'',chipCls:''};
+  const d=diffDiasISO(hoyISO(),t.fechaISO);
+  if(d<0)             return{cls:'venc',   chip:'Vencida',chipCls:'bad'};
+  if(d<=TAREA_DIAS_PROX) return{cls:'tk-prox',chip:d===0?'Vence hoy':`En ${d} día${d===1?'':'s'}`,chipCls:'warn'};
+  return{cls:'tk-plan',chip:'',chipCls:''};
 }
 function hoyISO(){const d=new Date();const p=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
 /* tarea vencida: tiene fecha límite pasada y no está realizada */
 function tareaVencida(t){return !!t.fechaISO && t.estatus!=='Tarea realizada' && t.fechaISO<hoyISO();}
 function renderTareas(){
   $('#tkBody').innerHTML=(db.tareas||[]).map(x=>{normTarea(x);
-    const venc=tareaVencida(x);
+    const st=estadoTarea(x);
     const opts=TAREA_ESTATUS.map(s=>`<option${s===x.estatus?' selected':''}>${s}</option>`).join('');
-    return `<tr${venc?' class="venc"':''}>
+    return `<tr class="${st.cls}">
       ${selChkCell('tareas',x.id)}
-      <td><b>${esc(x.tarea)}</b>${venc?' <span class="dup-badge">Vencida</span>':''}</td>
-      <td class="mono nw">${fechaDMY(x.fechaISO)||'—'}</td>
+      <td><b>${esc(x.tarea)}</b>${st.chip?` <span class="tk-chip ${st.chipCls}">${st.chip}</span>`:''}</td>
+      <td class="nw"><span class="tk-fecha"><span class="mono">${fechaDMY(x.fechaISO)||'—'}</span>
+        <button class="mini-btn" title="Cambiar fecha límite" onclick="abrirCalTarea(event,'${x.id}')">📅</button></span>
+        ${x.serieId?`<div class="tk-serie">🔁 Serie ${esc(TAREA_REPITE_TXT[x.repite]||'repetitiva')}</div>`:''}</td>
       <td><select class="tk-sel ${TAREA_SEL_CLASS[x.estatus]}" onchange="setTareaEstatus('${x.id}',this.value)">${opts}</select></td>
       <td><div class="row-actions"><button class="mini-btn" title="Editar" onclick="editTarea('${x.id}')">✎</button><button class="mini-btn del" title="Eliminar" onclick="delReg('tareas','${x.id}')">🗑</button></div></td></tr>`;}).join('')
     ||`<tr><td colspan="5"><div class="empty"><div class="big">📋</div>Sin tareas registradas</div></td></tr>`;
@@ -3557,18 +3651,141 @@ function renderTareas(){
 /* cambiar el estatus directamente desde la tabla */
 window.setTareaEstatus=(id,val)=>{const t=(db.tareas||[]).find(x=>x.id===id);if(!t)return;
   t.estatus=TAREA_ESTATUS.includes(val)?val:'Tarea pendiente';persist();renderTareas();};
+
+/* ==================== MINI CALENDARIO: REPROGRAMAR FECHA LÍMITE ==================== */
+const CAL_MES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+const CAL_DOW=['lu','ma','mi','ju','vi','sá','do'];
+let calCtx=null;          // {id, y, m, pick}
+let calPendiente=null;    // {tarea, nueva} en espera de elegir alcance en una serie
+
+function calEl(){
+  let el=$('#calPop');
+  if(!el){el=document.createElement('div');el.id='calPop';el.className='cal-pop';document.body.appendChild(el);
+    el.addEventListener('click',calClick);}
+  return el;
+}
+function renderCal(){
+  if(!calCtx)return;
+  const {y,m,pick}=calCtx, hoy=hoyISO();
+  const primero=new Date(Date.UTC(y,m,1));
+  const offset=(primero.getUTCDay()+6)%7;                       // la semana inicia en lunes
+  const diasMes=new Date(Date.UTC(y,m+1,0)).getUTCDate();
+  const diasPrev=new Date(Date.UTC(y,m,0)).getUTCDate();
+  let celdas='';
+  for(let i=offset;i>0;i--) celdas+=`<button type="button" class="cal-day out" disabled>${diasPrev-i+1}</button>`;
+  for(let d=1;d<=diasMes;d++){
+    const iso=dateAISO(new Date(Date.UTC(y,m,d)));
+    const cls=['cal-day']; if(iso===hoy)cls.push('hoy'); if(iso===pick)cls.push('pick');
+    celdas+=`<button type="button" class="${cls.join(' ')}" data-iso="${iso}">${d}</button>`;
+  }
+  const resto=(7-((offset+diasMes)%7))%7;
+  for(let d=1;d<=resto;d++) celdas+=`<button type="button" class="cal-day out" disabled>${d}</button>`;
+  calEl().innerHTML=`
+    <div class="cal-head">
+      <button type="button" class="cal-nav" data-nav="-1" title="Mes anterior">‹</button>
+      <div class="cal-title">${CAL_MES[m]} ${y}</div>
+      <button type="button" class="cal-nav" data-nav="1" title="Mes siguiente">›</button>
+    </div>
+    <div class="cal-grid">${CAL_DOW.map(d=>`<div class="cal-dow">${d}</div>`).join('')}${celdas}</div>
+    <div class="cal-sel">${pick?`Nueva fecha: <b>${fechaDMY(pick)}</b>`:'Selecciona un día del calendario'}</div>
+    <div class="cal-acts">
+      <button type="button" class="btn btn-ghost btn-sm" data-cal="cancel">Cancelar</button>
+      <button type="button" class="btn btn-primary btn-sm" data-cal="save">Guardar nueva fecha</button>
+    </div>`;
+}
+function posCal(btn){
+  const el=calEl(), r=btn.getBoundingClientRect(), w=el.offsetWidth||272, h=el.offsetHeight||340;
+  let left=Math.max(8,Math.min(r.left,innerWidth-w-8));
+  let top=r.bottom+6; if(top+h>innerHeight-8) top=Math.max(8,r.top-h-6);
+  el.style.left=left+'px'; el.style.top=top+'px';
+}
+window.abrirCalTarea=(ev,id)=>{
+  ev.stopPropagation();
+  const t=(db.tareas||[]).find(x=>x.id===id); if(!t)return; normTarea(t);
+  const base=t.fechaISO||hoyISO(), d=isoADate(base);
+  calCtx={id,y:d.getUTCFullYear(),m:d.getUTCMonth(),pick:t.fechaISO||''};
+  renderCal(); calEl().classList.add('open'); posCal(ev.currentTarget);
+};
+function cerrarCal(){calCtx=null;const el=$('#calPop');if(el)el.classList.remove('open');}
+function calClick(e){
+  const nav=e.target.closest('[data-nav]');
+  if(nav){const paso=+nav.dataset.nav;let m=calCtx.m+paso,y=calCtx.y;
+    if(m<0){m=11;y--;} if(m>11){m=0;y++;} calCtx.m=m;calCtx.y=y;renderCal();return;}
+  const dia=e.target.closest('[data-iso]');
+  if(dia){calCtx.pick=dia.dataset.iso;renderCal();return;}
+  const act=e.target.closest('[data-cal]');
+  if(act){ act.dataset.cal==='save'?guardarCal():cerrarCal(); }
+}
+function guardarCal(){
+  const t=(db.tareas||[]).find(x=>x.id===calCtx.id);
+  if(!t){cerrarCal();return;}
+  const nueva=calCtx.pick;
+  if(!nueva){toast('⚠ Selecciona una fecha en el calendario');return;}
+  if(nueva===t.fechaISO){cerrarCal();toast('La fecha límite no cambió');return;}
+  const serie=serieDe(t);
+  if(serie.length>1){                       // tarea repetitiva: preguntar el alcance
+    calPendiente={tarea:t,nueva};cerrarCal();abrirSerieModal(t,serie,nueva);return;
+  }
+  t.fechaISO=nueva;persist();cerrarCal();renderTareas();
+  toast(`✓ Nueva fecha límite: ${fechaDMY(nueva)}`);
+}
+document.addEventListener('click',e=>{ if(calCtx && !e.target.closest('#calPop')) cerrarCal(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&calCtx) cerrarCal(); });
+window.addEventListener('resize',()=>{ if(calCtx) cerrarCal(); });
+
+/* ---- alcance del cambio cuando la tarea pertenece a una serie ---- */
+function abrirSerieModal(t,serie,nueva){
+  $('#tkSerieSub').textContent=`${serie.length} tareas · repetición ${TAREA_REPITE_TXT[t.repite]||'personalizada'}`;
+  $('#tkSerieBody').innerHTML=`La tarea “<b>${esc(t.tarea)}</b>” forma parte de una serie repetitiva.<br>`+
+    `Vas a cambiar su fecha límite de <b>${fechaDMY(t.fechaISO)||'—'}</b> a <b>${fechaDMY(nueva)}</b>. ¿Qué deseas modificar?`;
+  $('#tkSerieModal').classList.add('open');
+}
+function cerrarSerieModal(){$('#tkSerieModal').classList.remove('open');calPendiente=null;}
+function aplicarSerie(scope){
+  if(!calPendiente)return;
+  const {tarea:t,nueva}=calPendiente;
+  const delta=t.fechaISO?diffDiasISO(t.fechaISO,nueva):0;   // las demás se recorren el mismo número de días
+  const serie=serieDe(t);
+  let objetivo=[t];
+  if(scope==='todas') objetivo=serie;
+  else if(scope==='siguientes'){
+    const base=t.fechaISO||nueva;
+    objetivo=serie.filter(x=>x.id===t.id||(x.fechaISO&&x.fechaISO>base));
+  }
+  objetivo.forEach(x=>{
+    if(x.id===t.id) x.fechaISO=nueva;
+    else if(x.fechaISO&&delta) x.fechaISO=addDiasISO(x.fechaISO,delta);
+  });
+  const n=objetivo.length;
+  persist();cerrarSerieModal();renderTareas();
+  toast(`✓ ${n} tarea${n===1?'':'s'} actualizada${n===1?'':'s'} · ${fechaDMY(nueva)}`);
+}
+document.querySelectorAll('#tkSerieModal [data-scope]').forEach(b=>b.onclick=()=>aplicarSerie(b.dataset.scope));
+$('#tkSerieCancel').onclick=$('#tkSerieClose').onclick=cerrarSerieModal;
+$('#tkSerieModal').onclick=e=>{if(e.target===$('#tkSerieModal'))cerrarSerieModal();};
 /* ventana emergente para crear / editar una tarea */
 function openTkModal(edit){
   $('#tkForm').reset();
   $('#tkfEstatus').innerHTML=TAREA_ESTATUS.map(s=>`<option>${s}</option>`).join('');
+  $('#tkfRepite').innerHTML=TAREA_REPITE.map(([v,txt])=>`<option value="${v}">${txt}</option>`).join('');
   if(edit){normTarea(edit);
     $('#tkfId').value=edit.id;$('#tkModalTitle').textContent='Editar tarea';
     $('#tkfNombre').value=edit.tarea||'';$('#tkfFecha').value=fechaDMY(edit.fechaISO)||'';$('#tkfEstatus').value=edit.estatus;
-  }else{$('#tkfId').value='';$('#tkModalTitle').textContent='Crear tarea';$('#tkfEstatus').value='Tarea pendiente';}
+    // al editar no se rehace la serie: la repetición queda solo informativa
+    $('#tkfRepite').value=edit.repite||'';$('#tkfRepite').disabled=true;
+    $('#tkfRepNota').textContent=edit.serieId
+      ?`Esta tarea pertenece a una serie repetitiva de ${serieDe(edit).length} tareas. Usa el botón 📅 de la tabla para reprogramarla.`
+      :'La repetición solo se define al crear la tarea.';
+    $('#tkfRepNota').classList.remove('hidden');
+  }else{$('#tkfId').value='';$('#tkModalTitle').textContent='Crear tarea';$('#tkfEstatus').value='Tarea pendiente';
+    $('#tkfRepite').value='';$('#tkfRepite').disabled=false;$('#tkfRepNota').classList.add('hidden');}
+  $('#tkfReps').value=6;
+  $('#tkfRepsWrap').classList.toggle('hidden',!$('#tkfRepite').value||$('#tkfRepite').disabled);
   $('#tkModal').classList.add('open');
 }
 function cerrarTkModal(){$('#tkModal').classList.remove('open');}
 $('#tkNuevoBtn').onclick=()=>openTkModal();
+$('#tkfRepite').onchange=e=>$('#tkfRepsWrap').classList.toggle('hidden',!e.target.value);
 $('#tkCancel').onclick=$('#tkModalClose').onclick=cerrarTkModal;
 $('#tkModal').onclick=e=>{if(e.target===$('#tkModal'))cerrarTkModal();};
 window.editTarea=id=>{const t=(db.tareas||[]).find(x=>x.id===id);if(t)openTkModal(t);};
@@ -3581,8 +3798,17 @@ $('#tkForm').onsubmit=e=>{
   if(fechaRaw){fechaISO=parseFechaDMY(fechaRaw);if(!fechaISO){toast('⚠ La fecha límite debe tener el formato DD/MM/AAAA');return;}}
   const estatus=TAREA_ESTATUS.includes($('#tkfEstatus').value)?$('#tkfEstatus').value:'Tarea pendiente';
   const id=$('#tkfId').value;
+  const repite=$('#tkfRepite').disabled?'':$('#tkfRepite').value;
   if(id){const i=db.tareas.findIndex(x=>x.id===id);db.tareas[i]={...db.tareas[i],tarea,fechaISO,estatus};delete db.tareas[i].estado;delete db.tareas[i].fecha;toast('✓ Tarea actualizada');}
-  else{db.tareas.unshift({id:uid(),tarea,fechaISO,estatus});toast('✓ Tarea creada');}
+  else if(repite){                                   // alta de una serie repetitiva
+    if(!fechaISO){toast('⚠ Una tarea repetitiva necesita fecha límite');return;}
+    const n=Math.max(2,Math.min(60,parseInt($('#tkfReps').value,10)||6));
+    const serieId='serie_'+uid();
+    const nuevas=[];let f=fechaISO;
+    for(let i=0;i<n;i++){nuevas.push({id:uid(),tarea,fechaISO:f,estatus,serieId,repite});f=sigFechaISO(f,repite);}
+    db.tareas.unshift(...nuevas);toast(`✓ Serie creada: ${n} tareas`);
+  }
+  else{db.tareas.unshift({id:uid(),tarea,fechaISO,estatus,serieId:'',repite:''});toast('✓ Tarea creada');}
   persist();cerrarTkModal();renderTareas();
 };
 
