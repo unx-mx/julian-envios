@@ -1,0 +1,12 @@
+{
+  "name": "crm-ccrgm-envios",
+  "version": "1.0.0",
+  "private": true,
+  "description": "CRM CCRGM · Envíos de materiales didácticos",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
